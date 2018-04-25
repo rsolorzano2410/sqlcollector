@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration>
+    <Properties>
+        <Property name="log-modulename">SQLCollector</Property>
+        <Property name="log-path">logs</Property>
+        <Property name="log-pattern">[%5p] - %c{1}:%L %d{yyyy-MM-dd HH:mm:ss.SSS} - %m%n</Property>
+        <Property name="log-filename">${log-path}/${log-modulename}.log</Property>
+        <Property name="log-rollingpattern">{yyyy-MM-dd}</Property>
+        <Property name="log-filepattern">${log-path}/${log-modulename}-%d${log-rollingpattern}.log.gz</Property>
+    </Properties>
+ 
+    <Appenders>
+        <RollingFile name="file-log" fileName="${log-filename}" filePattern="${log-filepattern}">
+            <PatternLayout pattern="${log-pattern}"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true" />
+            </Policies>
+        </RollingFile>
+<!-- 
+To send the logs to console
+-->
+        <Console name="console" target="SYSTEM_OUT">
+            <PatternLayout pattern="${log-pattern}" />
+        </Console>
+    </Appenders>
+    <Loggers>
+        <!-- valid values trace,debug,info,warn,error,fatal -->
+        <Root level="debug">
+<!-- 
+To send the logs to console
+-->
+            <appender-ref ref="console" />
+            <appender-ref ref="file-log" />
+        </Root>
+    </Loggers>
+</Configuration>

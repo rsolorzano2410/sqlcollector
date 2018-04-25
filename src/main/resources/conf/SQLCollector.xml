@@ -1,0 +1,598 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<SQLCollector>
+	<SourceDatabases>
+		<SourceDatabase id="oracledb1">
+			<Host>localhost</Host>
+			<Port>1521</Port>
+			<DbName>xe</DbName>
+			<Username>system</Username>
+			<Password>oracle</Password>
+			<Ssl>false</Ssl>
+			<SslCertFilePath></SslCertFilePath>
+			<ReconnectTimeoutSecs>20</ReconnectTimeoutSecs>
+			<IntervalSecs>60</IntervalSecs>
+			<DestDatabaseId>influxdb1</DestDatabaseId>
+			<Measurements>
+				<Measurement id="msmt21"/>
+<!-- 
+				<Measurement id="msmt11"/>
+				<Measurement id="msmt12"/>
+				<Measurement id="msgr111"/>
+				<Measurement id="msit1111"/>
+-->
+			</Measurements>
+			<LogFileName>oracledb1</LogFileName>
+			<LogLevel>debug</LogLevel>
+		</SourceDatabase>
+<!-- 
+		<SourceDatabase id="oracledb1">
+			<Host>172.17.0.11</Host>
+			<Port>1521</Port>
+			<DbName>oradb1</DbName>
+			<Username>orauser1</Username>
+			<Password>orapswd1</Password>
+			<Ssl>false</Ssl>
+			<SslCertFilePath></SslCertFilePath>
+			<ReconnectTimeoutSecs>20</ReconnectTimeoutSecs>
+			<IntervalSecs>60</IntervalSecs>
+			<DestDatabaseId>influxdb1</DestDatabaseId>
+			<Measurements>
+				<Measurement id="msmt11"/>
+				<Measurement id="msmt12"/>
+				<Measurement id="msgr111"/>
+				<Measurement id="msit1111"/>
+			</Measurements>
+			<LogFileName>oracledb1</LogFileName>
+			<LogLevel>debug</LogLevel>
+		</SourceDatabase>
+		<SourceDatabase id="oracledb2">
+			<Host>172.17.0.12</Host>
+			<Port>1521</Port>
+			<DbName>oradb2</DbName>
+			<Username>orauser2</Username>
+			<Password>orapswd2</Password>
+			<Ssl>false</Ssl>
+			<SslCertFilePath></SslCertFilePath>
+			<ReconnectTimeoutSecs>20</ReconnectTimeoutSecs>
+			<IntervalSecs>60</IntervalSecs>
+			<DestDatabaseId>influxdb2</DestDatabaseId>
+			<Measurements>
+				<Measurement id="msmt21"/>
+				<Measurement id="msmt22"/>
+				<Measurement id="msgr211"/>
+				<Measurement id="msit2111"/>
+			</Measurements>
+			<LogFileName>oracledb2</LogFileName>
+			<LogLevel>info</LogLevel>
+		</SourceDatabase>
+-->
+	</SourceDatabases>
+	<DestDatabases>
+		<DestDatabase id="influxdb1">
+			<Host>localhost</Host>
+			<Port>8086</Port>
+			<DbName>ipasdb</DbName>
+			<Username>admin</Username>
+			<Password>password4admin</Password>
+			<Ssl>true</Ssl>
+			<SslCertFilePath>/etc/ssl/influxdb-selfsigned.crt</SslCertFilePath>
+			<ReconnectTimeoutSecs>20</ReconnectTimeoutSecs>
+		</DestDatabase>
+<!-- 
+		<DestDatabase id="influxdb1">
+			<Host>172.17.0.1</Host>
+			<Port>8086</Port>
+			<DbName>ipasdb1</DbName>
+			<Username>user1</Username>
+			<Password>pswd1</Password>
+			<Ssl>false</Ssl>
+			<SslCertFilePath></SslCertFilePath>
+			<ReconnectTimeoutSecs>20</ReconnectTimeoutSecs>
+		</DestDatabase>
+		<DestDatabase id="influxdb2">
+			<Host>172.17.0.2</Host>
+			<Port>8086</Port>
+			<DbName>ipasdb2</DbName>
+			<Username>user2</Username>
+			<Password>pswd2</Password>
+			<Ssl>false</Ssl>
+			<SslCertFilePath></SslCertFilePath>
+			<ReconnectTimeoutSecs>20</ReconnectTimeoutSecs>
+		</DestDatabase>
+-->
+	</DestDatabases>
+	<Queries>
+		<Query id="q_db_io">
+			<Statement>
+				SELECT sum(vf.PHYBLKRD)*8192 AS PHY_BLK_R, sum(vf.PHYBLKWRT)*8192 AS PHY_BLK_W, 'tablespace' AS i_prefix, dt.tablespace_name
+					FROM ((dba_data_files dd JOIN v$filestat vf ON dd.file_id = vf.file#)
+						JOIN dba_tablespaces dt ON dd.tablespace_name = dt.tablespace_name)
+				GROUP BY dt.tablespace_name
+			</Statement>
+			<Columns>
+<!--
+				<Column>
+					<Name>name of the column in statement</Name>
+					<DestName>name to use in destination database</DestName>
+					<Type>tag: the value is written as a tag in destination database, 
+						field: the value is written as a field in destination database, 
+						metricName: the value is written as a metricName in destination database (used in iterategroups), 
+						metricValue: the value is written as a metricValue in destination database (used in iterategroups)
+					</Type>
+					<DataType>data type of the value in destination database. Possible values: string, long, double, boolean</DataType>
+				</Column>
+-->
+				<Column>
+					<Name>i_prefix</Name>
+					<DestName>i_prefix</DestName>
+					<Type>tag</Type>
+					<DataType>string</DataType>
+				</Column>
+				<Column>
+					<Name>TABLESPACE_NAME</Name>
+					<DestName>TABLESPACE_NAME</DestName>
+					<Type>tag</Type>
+					<DataType>string</DataType>
+				</Column>
+				<Column>
+					<Name>PHY_BLK_R</Name>
+					<DestName>PHY_BLK_R</DestName>
+					<Type>field</Type>
+					<DataType>long</DataType>
+				</Column>
+				<Column>
+					<Name>PHY_BLK_W</Name>
+					<DestName>PHY_BLK_W</DestName>
+					<Type>field</Type>
+					<DataType>long</DataType>
+				</Column>
+			</Columns>
+		</Query>
+		<Query id="q_db_wait">
+			<Statement>
+				SELECT event, time_waited from v$system_event
+					WHERE event IN 
+					<!-- IN condition will be constructed with the parameters having the attribute argument="IN" -->
+					<!-- 'buffer busy waits','db file sequential read','log file switch completion','latch free' -->
+			</Statement>
+			<Columns>
+				<Column>
+					<Name>event</Name>
+					<DestName>event</DestName>
+					<Type>tag</Type>
+					<DataType>string</DataType>
+				</Column>
+				<Column>
+					<Name>TIME_WAITED</Name>
+					<DestName>TIME_WAITED</DestName>
+					<Type>field</Type>
+					<DataType>long</DataType>
+				</Column>
+			</Columns>
+		</Query>
+		<Query id="q_db_wait_wo_params">
+			<Statement>
+				SELECT event, time_waited from v$system_event
+					WHERE event IN ('buffer busy waits','db file sequential read','log file switch completion','latch free')
+					<!-- IN condition will be constructed with the parameters having the attribute argument="IN" -->
+					<!-- 'buffer busy waits','db file sequential read','log file switch completion','latch free' -->
+			</Statement>
+			<Columns>
+				<Column>
+					<Name>event</Name>
+					<DestName>event</DestName>
+					<Type>tag</Type>
+					<DataType>string</DataType>
+				</Column>
+				<Column>
+					<Name>TIME_WAITED</Name>
+					<DestName>TIME_WAITED</DestName>
+					<Type>field</Type>
+					<DataType>long</DataType>
+				</Column>
+			</Columns>
+		</Query>
+		<Query id="q_db_time">
+			<Statement>
+				SELECT stat_name, Round(value/1000000) time
+					FROM v$sys_time_model where stat_name IN 
+					<!-- 'DB time', 'DB CPU' -->
+			</Statement>
+			<Columns>
+				<Column>
+					<Name>STAT_NAME</Name>
+					<DestName>STAT_NAME</DestName>
+					<Type>tag</Type>
+					<DataType>string</DataType>
+				</Column>
+				<Column>
+					<Name>time</Name>
+					<DestName>time</DestName>
+					<Type>field</Type>
+					<DataType>long</DataType>
+				</Column>
+			</Columns>
+		</Query>
+		<Query id="q_db_time_wo_params">
+			<Statement>
+				SELECT stat_name, Round(value/1000000) time
+					FROM v$sys_time_model where stat_name IN ('DB time', 'DB CPU')
+					<!-- 'DB time', 'DB CPU' -->
+			</Statement>
+			<Columns>
+				<Column>
+					<Name>STAT_NAME</Name>
+					<DestName>STAT_NAME</DestName>
+					<Type>tag</Type>
+					<DataType>string</DataType>
+				</Column>
+				<Column>
+					<Name>time</Name>
+					<DestName>time</DestName>
+					<Type>field</Type>
+					<DataType>long</DataType>
+				</Column>
+			</Columns>
+		</Query>
+		<Query id="q_db_redo">
+			<Statement>
+				SELECT name ,value
+					FROM v$sysstat
+						WHERE name = ?
+						<!-- 'redo entries' -->
+			</Statement>
+			<Columns>
+				<Column>
+					<Name>name</Name>
+					<DestName>name</DestName>
+					<Type>tag</Type>
+					<DataType>string</DataType>
+				</Column>
+				<Column>
+					<Name>value</Name>
+					<DestName>value</DestName>
+					<Type>field</Type>
+					<DataType>long</DataType>
+				</Column>
+			</Columns>
+		</Query>
+		<Query id="q_db_size">
+			<Statement>
+				SELECT a.tablespace_name,SUM(a.bytes)/1024/1024 ActualMb,(SUM(a.bytes)/1024/1024 - round(c.Free/1024/1024)) TotalUsado
+					FROM dba_data_files a, sys.filext$ b, (SELECT c.tablespace_name , sum(c.bytes) Free
+					FROM DBA_FREE_SPACE c GROUP BY TABLESPACE_NAME) c
+						WHERE a.file_id = b.file#(+)
+							AND a.tablespace_name = c.tablespace_name
+				GROUP by a.tablespace_name, c.Free/1024/1024
+			</Statement>
+			<Columns>
+				<Column>
+					<Name>TABLESPACE_NAME</Name>
+					<DestName>TABLESPACE_NAME</DestName>
+					<Type>tag</Type>
+					<DataType>string</DataType>
+				</Column>
+				<Column>
+					<Name>ActualMb</Name>
+					<DestName>ActualMb</DestName>
+					<Type>field</Type>
+					<DataType>long</DataType>
+				</Column>
+				<Column>
+					<Name>TotalUsado</Name>
+					<DestName>TotalUsado</DestName>
+					<Type>field</Type>
+					<DataType>long</DataType>
+				</Column>
+			</Columns>
+		</Query>
+		<Query id="q_db_session">
+			<Statement>
+				SELECT 'BACKGROUND' as TIPO, count(1) as total
+					FROM v$session
+						WHERE type ='BACKGROUND'
+				GROUP BY type
+				UNION ALL
+					SELECT STATUS as TIPO, count(1) as total
+						FROM v$session
+				GROUP BY STATUS
+			</Statement>
+			<Columns>
+				<Column>
+					<Name>TIPO</Name>
+					<DestName>TIPO</DestName>
+					<Type>tag</Type>
+					<DataType>string</DataType>
+				</Column>
+				<Column>
+					<Name>total</Name>
+					<DestName>total</DestName>
+					<Type>field</Type>
+					<DataType>long</DataType>
+				</Column>
+			</Columns>
+		</Query>
+		<Query id="q_db_control_grid">
+			<Statement>
+				select target_name, metric_column, value
+					from mgmt$metric_current
+					where target_name = ?
+					<!-- A parameter with the attribute type="column" must exist with value=target_name -->
+						and collection_timestamp > sysdate-1/24
+						and metric_column IN
+						<!-- A list of parameters with the attribute argument="IN" must exist -->
+			</Statement>
+			<Columns>
+<!--
+				<Column>
+					<Name>name of the column in statement</Name>
+					<DestName>name to use in destination database</DestName>
+					<Type>tag: the value is written as a tag in destination database, 
+						field: the value is written as a field in destination database, 
+						metricName: the value is written as a metricName in destination database (used in iterategroups), 
+						metricValue: the value is written as a metricValue in destination database (used in iterategroups)
+					</Type>
+					<DataType>data type of the value in destination database. Possible values: string, long, double, boolean</DataType>
+				</Column>
+-->
+				<Column>
+					<Name>target_name</Name>
+					<DestName>target_name</DestName>
+					<Type>tag</Type>
+					<DataType>string</DataType>
+				</Column>
+				<Column>
+					<Name>metric_column</Name>
+					<Type>metricName</Type>
+					<DataType>string</DataType>
+				</Column>
+				<Column>
+					<Name>value</Name>
+					<Type>metricValue</Type>
+					<DataType>string</DataType>
+				</Column>
+			</Columns>
+		</Query>
+	</Queries>
+	<Measurements>
+		<Measurement id="msmt11">
+			<!-- 
+			For next version 
+			<ExtraTags>base</ExtraTags> 
+			-->
+			<Queries>
+				<Query id="q_db_io"/>
+				<Query id="q_db_redo">
+					<!-- 'redo entries' -->
+					<Parameters>
+						<!--type: column or literal - default literal-->
+						<Parameter type="literal">redo entries</Parameter>
+					</Parameters>
+				</Query>
+			</Queries>
+		</Measurement>
+		<Measurement id="msmt12">
+			<Queries>
+				<Query id="q_db_wait">
+					<!-- 'buffer busy waits','db file sequential read','log file switch completion','latch free' -->
+					<Parameters>
+						<!--arguments for IN condition of query-->
+						<Parameter argument="IN">buffer busy waits</Parameter>
+						<Parameter argument="IN">db file sequential read</Parameter>
+						<Parameter argument="IN">log file switch completion</Parameter>
+						<Parameter argument="IN">latch free</Parameter>
+					</Parameters>
+				</Query>
+				<Query id="q_db_time">
+					<!-- 'DB time', 'DB CPU' -->
+					<Parameters>
+						<!--arguments for IN condition of query-->
+						<Parameter argument="IN">DB time</Parameter>
+						<Parameter argument="IN">DB CPU</Parameter>
+					</Parameters>
+				</Query>
+			</Queries>
+		</Measurement>
+		<Measurement id="msmt21">
+			<Queries>
+				<Query id="q_db_size"/>
+				<Query id="q_db_session"/>
+			</Queries>
+		</Measurement>
+		<Measurement id="msmt22">
+			<Queries>
+				<Query id="q_db_wait">
+					<!-- 'buffer busy waits','db file sequential read','log file switch completion','latch free' -->
+					<Parameters>
+						<!--arguments for IN condition of query-->
+						<Parameter argument="IN">buffer busy waits</Parameter>
+						<Parameter argument="IN">db file sequential read</Parameter>
+						<Parameter argument="IN">log file switch completion</Parameter>
+						<Parameter argument="IN">latch free</Parameter>
+					</Parameters>
+				</Query>
+				<Query id="q_db_time">
+					<!-- 'DB time', 'DB CPU' -->
+					<Parameters>
+						<!--arguments for IN condition of query-->
+						<Parameter argument="IN">DB time</Parameter>
+						<Parameter argument="IN">DB CPU</Parameter>
+					</Parameters>
+				</Query>
+				<Query id="q_db_size"/>
+				<Query id="q_db_session"/>
+			</Queries>
+		</Measurement>
+	</Measurements>
+	<MeasurementGroups>
+		<MeasurementGroup id="msgr111">
+			<Measurements>
+				<Measurement id="msmt11"/>
+				<Measurement id="msmt12"/>
+			</Measurements>
+		</MeasurementGroup>
+		<MeasurementGroup id="msgr211">
+			<Measurements>
+				<Measurement id="msmt21"/>
+				<Measurement id="msmt22"/>
+			</Measurements>
+		</MeasurementGroup>
+	</MeasurementGroups>
+	<IterateGroups>
+		<IterateGroup id="msit1111">
+			<Query id="q_db_instances">
+<!-- 
+				<Statement cache="true" cacheTimeSecs="300">
+					select t.host_name, t.target_name, t.instance_name, t.database_name FROM MGMT$DB_DBNINSTANCEINFO t
+				</Statement>
+-->
+	            <Statement cache="true" cacheTimeSecs="300">
+	                select 'target_name' as target_name, 'host_name' as host_name, 'xe' as instance_name, 'database_name' as database_name FROM dual
+	                union
+	                select 'target_name2' as target_name, 'host_name' as host_name, 'xe2' as instance_name, 'database_name' as database_name FROM dual
+	                union
+	                select 'target_name3' as target_name, 'host_name' as host_name, 'xe3' as instance_name, 'database_name' as database_name FROM dual
+	                union
+	                select 'target_name4' as target_name, 'host_name' as host_name, 'xe4' as instance_name, 'database_name' as database_name FROM dual
+	                union
+	                select 'target_name5' as target_name, 'host_name' as host_name, 'xe5' as instance_name, 'database_name' as database_name FROM dual
+	            </Statement>
+				<Columns>
+					<Column>
+						<Name>target_name</Name>
+						<!-- Type key used to indicate this is a key column used as a search parameter -->
+						<Type>key</Type>
+					</Column>
+					<Column>
+						<Name>instance_name</Name>
+						<!-- Type InstancesFrom used for writing the value of this column as a tag for influx -->
+						<Type>InstancesFrom</Type>
+					</Column>
+					<Column>
+						<Name>host_name</Name>
+					</Column>
+					<Column>
+						<Name>database_name</Name>
+					</Column>
+				</Columns>
+			</Query>
+			<Queries>
+				<Query id="q_db_io"/>
+<!-- 
+				<Query id="q_db_wait_wo_params"/>
+				<Query id="q_db_time_wo_params"/>
+-->
+				<Query id="q_db_wait">
+					<!-- 'buffer busy waits','db file sequential read','log file switch completion','latch free' -->
+					<Parameters>
+						<!--arguments for IN condition of query-->
+						<Parameter argument="IN">buffer busy waits</Parameter>
+						<Parameter argument="IN">db file sequential read</Parameter>
+						<Parameter argument="IN">log file switch completion</Parameter>
+						<Parameter argument="IN">latch free</Parameter>
+					</Parameters>
+				</Query>
+				<Query id="q_db_time">
+					<!-- 'DB time', 'DB CPU' -->
+					<Parameters>
+						<!--arguments for IN condition of query-->
+						<Parameter argument="IN">DB time</Parameter>
+						<Parameter argument="IN">DB CPU</Parameter>
+					</Parameters>
+				</Query>
+<!-- 
+				<Query id="q_db_control_grid">
+					<Parameters>
+-->
+						<!--type: column or literal - default literal-->
+						<!--type=column: the value passed as parameter is the value obtained on previous query-->
+<!-- 
+						<Parameter type="column">target_name</Parameter>
+-->
+						<!--arguments for IN condition of query-->
+<!-- 
+						<Parameter argument="IN">dbtime_ps</Parameter>
+						<Parameter argument="IN">response_time_pt</Parameter>
+						<Parameter argument="IN">cpu_time_pct</Parameter>
+						<Parameter argument="IN">redologalloc_hit_pct</Parameter>
+						<Parameter argument="IN">redosize_ps</Parameter>
+						<Parameter argument="IN">interconnect_rate</Parameter>
+						<Parameter argument="IN">Logons</Parameter>
+						<Parameter argument="IN">avg_active_sessions</Parameter>
+					</Parameters>
+				</Query>
+-->
+			</Queries>
+		</IterateGroup>
+<!-- 
+		<IterateGroup id="msit2111">
+			<Query id="q_db_instances">
+				<Statement cache="true" cacheTimeSecs="300">
+					select t.host_name, t.target_name, t.instance_name, t.database_name FROM MGMT$DB_DBNINSTANCEINFO t
+				</Statement>
+				<Columns>
+					<Column>
+						<Name>target_name</Name>
+-->
+						<!-- Type key used to indicate this is a key column used as a search parameter -->
+<!-- 
+						<Type>key</Type>
+					</Column>
+					<Column>
+						<Name>instance_name</Name>
+-->
+						<!-- Type InstancesFrom used for writing the value of this column as a tag for influx -->
+<!-- 
+						<Type>InstancesFrom</Type>
+					</Column>
+					<Column>
+						<Name>host_name</Name>
+					</Column>
+					<Column>
+						<Name>database_name</Name>
+					</Column>
+				</Columns>
+			</Query>
+			<Queries>
+				<Query id="q_db_control_grid">
+					<Parameters>
+-->
+						<!-- type: column or literal - default literal -->
+						<!-- type=column: the value passed as parameter is the value obtained from a query, not a literal value -->
+<!-- 
+						<Parameter type="column">target_name</Parameter>
+-->
+						<!-- arguments for IN condition of query -->
+<!-- 
+						<Parameter argument="IN">executions_ps</Parameter>
+						<Parameter argument="IN">executeswoparse_pct</Parameter>
+						<Parameter argument="IN">softparse_pct</Parameter>
+						<Parameter argument="IN">enqreqs_ps</Parameter>
+						<Parameter argument="IN">enqtimeouts_ps</Parameter>
+						<Parameter argument="IN">enqwaits_ps</Parameter>
+						<Parameter argument="IN">physreads_ps</Parameter>
+						<Parameter argument="IN">iorequests_ps</Parameter>
+						<Parameter argument="IN">iombs_ps</Parameter>
+					</Parameters>
+				</Query>
+			</Queries>
+		</IterateGroup>
+-->
+	</IterateGroups>
+	<SelfMon>
+		<!-- Section with the parameters for Self Monitoring -->
+		<enabled>true</enabled>
+		<freq>60</freq>
+		<!-- 
+		#enabled:true/false, enables/disables self monitoring
+		#freq: send data Frequency
+		#prefix: prefix for measurement naming
+
+		prepare for next version 
+		#inherit device tags
+		#adds extra tags to the measurement, config should be set as a csv - tag1=value1,tag2=value2,...,tagN=valueN
+		<inheritdevicetags>true</inheritdevicetags>
+		<extratags>instance=sqlcollector01</extratags>
+		-->
+	</SelfMon>
+</SQLCollector>
