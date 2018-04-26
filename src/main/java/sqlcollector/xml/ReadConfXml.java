@@ -189,7 +189,7 @@ public class ReadConfXml {
     		if (xmlQueryFound != null) {
     			xmlQuery.setXmlStatement(xmlQueryFound.getXmlStatement());
     			xmlQuery.setXmlColumns(xmlQueryFound.getXmlColumns());
-    			L4j.getL4j().debug("completeXmlQueries. found sXmlQueryId: " + sXmlQueryId + ". statement: " + xmlQuery.getXmlStatement().getStatement() + ".RRRRRRRRRRRRRRRRR");
+    			L4j.getL4j().debug("completeXmlQueries. found sXmlQueryId: " + sXmlQueryId + ". statement: " + xmlQuery.getXmlStatement().getStatement());
     		}
     		lsXmlQueriesRet.add(xmlQuery);
     	}

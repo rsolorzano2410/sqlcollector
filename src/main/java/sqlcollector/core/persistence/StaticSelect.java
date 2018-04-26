@@ -22,7 +22,7 @@ public class StaticSelect {
         if(this.fristIteration) {
             L4j.getL4j().debug("Cache: " + Thread.currentThread().getName() + " QUERY: " + select);
         }
-        L4j.getL4j().debug("RSN. select: " + select);
+        L4j.getL4j().debug("executeQuery. select: " + select);
         ResultSet resultSet = null;
         try {
             this.preparedStatement = this.connection.prepareStatement(select);

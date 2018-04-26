@@ -13,10 +13,11 @@
 			<IntervalSecs>60</IntervalSecs>
 			<DestDatabaseId>influxdb1</DestDatabaseId>
 			<Measurements>
-				<Measurement id="msmt21"/>
-<!-- 
 				<Measurement id="msmt11"/>
 				<Measurement id="msmt12"/>
+				<Measurement id="msmt21"/>
+				<Measurement id="msmt22"/>
+<!-- 
 				<Measurement id="msgr111"/>
 				<Measurement id="msit1111"/>
 -->
@@ -151,29 +152,9 @@
 		<Query id="q_db_wait">
 			<Statement>
 				SELECT event, time_waited from v$system_event
-					WHERE event IN 
-					<!-- IN condition will be constructed with the parameters having the attribute argument="IN" -->
-					<!-- 'buffer busy waits','db file sequential read','log file switch completion','latch free' -->
-			</Statement>
-			<Columns>
-				<Column>
-					<Name>event</Name>
-					<DestName>event</DestName>
-					<Type>tag</Type>
-					<DataType>string</DataType>
-				</Column>
-				<Column>
-					<Name>TIME_WAITED</Name>
-					<DestName>TIME_WAITED</DestName>
-					<Type>field</Type>
-					<DataType>long</DataType>
-				</Column>
-			</Columns>
-		</Query>
-		<Query id="q_db_wait_wo_params">
-			<Statement>
-				SELECT event, time_waited from v$system_event
-					WHERE event IN ('buffer busy waits','db file sequential read','log file switch completion','latch free')
+					WHERE event = ? 
+					OR event = ? 
+					OR event IN 
 					<!-- IN condition will be constructed with the parameters having the attribute argument="IN" -->
 					<!-- 'buffer busy waits','db file sequential read','log file switch completion','latch free' -->
 			</Statement>
@@ -207,28 +188,7 @@
 				</Column>
 				<Column>
 					<Name>time</Name>
-					<DestName>time</DestName>
-					<Type>field</Type>
-					<DataType>long</DataType>
-				</Column>
-			</Columns>
-		</Query>
-		<Query id="q_db_time_wo_params">
-			<Statement>
-				SELECT stat_name, Round(value/1000000) time
-					FROM v$sys_time_model where stat_name IN ('DB time', 'DB CPU')
-					<!-- 'DB time', 'DB CPU' -->
-			</Statement>
-			<Columns>
-				<Column>
-					<Name>STAT_NAME</Name>
-					<DestName>STAT_NAME</DestName>
-					<Type>tag</Type>
-					<DataType>string</DataType>
-				</Column>
-				<Column>
-					<Name>time</Name>
-					<DestName>time</DestName>
+					<DestName>stat_time</DestName>
 					<Type>field</Type>
 					<DataType>long</DataType>
 				</Column>
@@ -356,10 +316,7 @@
 	</Queries>
 	<Measurements>
 		<Measurement id="msmt11">
-			<!-- 
-			For next version 
-			<ExtraTags>base</ExtraTags> 
-			-->
+			<ExtraTags>tag1=value1,tag2=value2</ExtraTags> 
 			<Queries>
 				<Query id="q_db_io"/>
 				<Query id="q_db_redo">
@@ -377,8 +334,12 @@
 					<!-- 'buffer busy waits','db file sequential read','log file switch completion','latch free' -->
 					<Parameters>
 						<!--arguments for IN condition of query-->
+<!-- 
 						<Parameter argument="IN">buffer busy waits</Parameter>
 						<Parameter argument="IN">db file sequential read</Parameter>
+ -->
+						<Parameter>buffer busy waits</Parameter>
+						<Parameter>db file sequential read</Parameter>
 						<Parameter argument="IN">log file switch completion</Parameter>
 						<Parameter argument="IN">latch free</Parameter>
 					</Parameters>
@@ -405,8 +366,12 @@
 					<!-- 'buffer busy waits','db file sequential read','log file switch completion','latch free' -->
 					<Parameters>
 						<!--arguments for IN condition of query-->
+<!-- 
 						<Parameter argument="IN">buffer busy waits</Parameter>
 						<Parameter argument="IN">db file sequential read</Parameter>
+ -->
+						<Parameter>buffer busy waits</Parameter>
+						<Parameter>db file sequential read</Parameter>
 						<Parameter argument="IN">log file switch completion</Parameter>
 						<Parameter argument="IN">latch free</Parameter>
 					</Parameters>
@@ -478,16 +443,16 @@
 			</Query>
 			<Queries>
 				<Query id="q_db_io"/>
-<!-- 
-				<Query id="q_db_wait_wo_params"/>
-				<Query id="q_db_time_wo_params"/>
--->
 				<Query id="q_db_wait">
 					<!-- 'buffer busy waits','db file sequential read','log file switch completion','latch free' -->
 					<Parameters>
 						<!--arguments for IN condition of query-->
+<!-- 
 						<Parameter argument="IN">buffer busy waits</Parameter>
 						<Parameter argument="IN">db file sequential read</Parameter>
+ -->
+						<Parameter>buffer busy waits</Parameter>
+						<Parameter>db file sequential read</Parameter>
 						<Parameter argument="IN">log file switch completion</Parameter>
 						<Parameter argument="IN">latch free</Parameter>
 					</Parameters>

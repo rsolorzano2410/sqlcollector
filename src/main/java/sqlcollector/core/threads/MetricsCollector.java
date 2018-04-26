@@ -18,28 +18,37 @@ public class MetricsCollector implements Runnable {
     private String sThreadId;
     private final Capturer capturer;
     private final InfluxWriter influxWriter;
+    private long lTimeToRW;
 
-    public MetricsCollector(String sThreadId, Capturer capturer, InfluxWriter influxWriter) {
+    public MetricsCollector(String sThreadId, Capturer capturer, InfluxWriter influxWriter, long lTimeToRW) {
         this.sThreadId = sThreadId;
         this.capturer = capturer;
         this.influxWriter = influxWriter;
+        this.lTimeToRW = lTimeToRW;
     }
 
     public void run(){
-    	L4j.getL4j().info("MetricsCollector. Init run. " + sThreadId);
+    	L4j.getL4j().info(sThreadId + ". MetricsCollector. Init run.");
         Thread.currentThread().setName(sThreadId);
-        long start_time=System.currentTimeMillis();
+		long lInitTime = System.currentTimeMillis();
         try {
 			List<BatchPoints> lsBatchPoints = this.capturer.getBatchPointsList();
-	        long lRetrieveTime = (System.currentTimeMillis() - start_time);
-	    	L4j.getL4j().info("MetricsCollector. lRetrieveTime: " + lRetrieveTime);
-	        this.influxWriter.writeToInflux(lsBatchPoints);
+	        long lRetrieveTime = System.currentTimeMillis() - lInitTime;
+	    	L4j.getL4j().info(sThreadId + ". MetricsCollector. lRetrieveTime: " + lRetrieveTime);
+	    	//TODO: Send RetrieveTime to self metrics
+	    	long lTimeToWrite = this.lTimeToRW - lRetrieveTime;
+	    	if (lTimeToWrite > 0) {
+		        this.influxWriter.writeToInflux(lsBatchPoints, lTimeToWrite);
+		        long lWriteTime = System.currentTimeMillis() - lInitTime - lRetrieveTime;
+		    	L4j.getL4j().info(sThreadId + ". MetricsCollector. lWriteTime: " + lWriteTime);
+		    	//TODO: Send WriteTime to self metrics
+	    	}
 		} catch (SQLException e) {
 			L4j.getL4j().error(sThreadId + ". MetricsCollector. Error getting metrics: " + e.getMessage());
 		} catch (InterruptedException e) {
 			L4j.getL4j().error(sThreadId + ". MetricsCollector. run. Interrupted while sleeping. Exception: " + e.getMessage());
 		}
-    	L4j.getL4j().info("MetricsCollector. End run. " + sThreadId);
+    	L4j.getL4j().info(sThreadId + ". MetricsCollector. End run.");
     }
     
     /*

@@ -2,14 +2,14 @@ package sqlcollector.core.statistics;
 
 import sqlcollector.core.logs.L4j;
 import sqlcollector.core.persistence.DynamicSelect;
-import sqlcollector.utils.Utils;
 import sqlcollector.xml.mapping.metrics.XmlColumn;
 import sqlcollector.xml.mapping.metrics.XmlColumns;
 import sqlcollector.xml.mapping.metrics.XmlDestDatabase;
 import sqlcollector.xml.mapping.metrics.XmlMeasurement;
+import sqlcollector.xml.mapping.metrics.XmlParameter;
+import sqlcollector.xml.mapping.metrics.XmlParameters;
 import sqlcollector.xml.mapping.metrics.XmlQueries;
 import sqlcollector.xml.mapping.metrics.XmlQuery;
-import sqlcollector.xml.mapping.metrics.XmlSourceDatabase;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -28,21 +28,23 @@ import org.influxdb.dto.Point.Builder;
 
 public class Capturer {
 
-    private XmlSourceDatabase xmlSourceDatabase;
+    private String sSourceDatabaseId;
     private XmlDestDatabase xmlDestDatabase;
     private XmlMeasurement xmlMeasurement;
+    private Connection connection;
 
     private L4j logger = L4j.getL4j();
 
-    public Capturer(XmlSourceDatabase xmlSourceDatabase, XmlDestDatabase xmlDestDatabase, XmlMeasurement xmlMeasurement) {
-        this.xmlSourceDatabase = xmlSourceDatabase;
+    public Capturer(String sSourceDatabaseId, Connection connection, XmlDestDatabase xmlDestDatabase, XmlMeasurement xmlMeasurement) {
+        this.sSourceDatabaseId = sSourceDatabaseId;
+        this.connection = connection;
         this.xmlDestDatabase = xmlDestDatabase;
         this.xmlMeasurement = xmlMeasurement;
     }
     
-    private DynamicSelect getDynamicSelect(Connection connection, Boolean bFirstIteration, String sStatement, List<String> arguments,  List<String> argumentsIN) {
+    private DynamicSelect getDynamicSelect(Boolean bFirstIteration, String sStatement, List<String> lsParameters,  List<String> lsParametersIN) {
         DynamicSelect dynamicSelect = new DynamicSelect(connection, bFirstIteration);
-        dynamicSelect.preparedStatement(sStatement, arguments, argumentsIN);
+        dynamicSelect.preparedStatement(sStatement, lsParameters, lsParametersIN);
     	return dynamicSelect;
     }
     
@@ -54,17 +56,28 @@ public class Capturer {
     
     public List<BatchPoints> getBatchPointsList() throws SQLException {
     	List<BatchPoints> lsBatchPoints = new LinkedList<BatchPoints>();
-    	//lsArguments and lsArgumentsIN empty lists for this version of code
-    	List<String> lsArguments = new LinkedList<String>();
-    	List<String> lsArgumentsIN = new LinkedList<String>();
+    	List<String> lsParameters = new LinkedList<String>();
+    	List<String> lsParametersIN = new LinkedList<String>();
         Boolean bFirstIteration = new Boolean(true);
-        Connection conn = Utils.getOracleDBConnection(xmlSourceDatabase);
 		String sMsmtName = xmlMeasurement.getId();
 		XmlQueries xmlQueries = xmlMeasurement.getXmlQueries();
 		if (xmlQueries != null) {
 			for (XmlQuery xmlQuery: xmlQueries.getXmlQueries()) {
 				String sStatement = xmlQuery.getXmlStatement().getStatement();
-                DynamicSelect dynamicSelect = getDynamicSelect(conn, bFirstIteration, sStatement, lsArguments, lsArgumentsIN);
+				lsParameters.clear();
+				lsParametersIN.clear();
+				XmlParameters xmlParameters = xmlQuery.getXmlParameters();
+				if (xmlParameters != null) {
+					List<XmlParameter> lsXmlParameters = xmlParameters.getXmlParameters();
+					for (XmlParameter xmlParameter: lsXmlParameters) {
+						if (xmlParameter.getArgument() == null) {
+							lsParameters.add(xmlParameter.getValue());
+						} else if (xmlParameter.getArgument().equalsIgnoreCase("IN")) {
+							lsParametersIN.add(xmlParameter.getValue());
+						}
+					}
+				}
+                DynamicSelect dynamicSelect = getDynamicSelect(bFirstIteration, sStatement, lsParameters, lsParametersIN);
                 ResultSet queryResultSet = getQueryResultSet(dynamicSelect);
                 BatchPoints batchPoints = getBatchPoints(queryResultSet, sMsmtName, xmlQuery);
                 lsBatchPoints.add(batchPoints);
@@ -86,8 +99,9 @@ public class Capturer {
 			Builder bPoint = Point.measurement(sMsmtName);
 			long lTimeNs = System.currentTimeMillis();
 			bPoint.time(lTimeNs, TimeUnit.MILLISECONDS);
-			bPoint.tag("DbId", this.xmlSourceDatabase.getId());
+			bPoint.tag("DbId", sSourceDatabaseId);
 			bPoint.tag("QueryId", xmlQuery.getId());
+			addExtraTags(bPoint, this.xmlMeasurement.getExtraTags());
 			boolean bPointHasFields = false;
 			XmlColumns xmlColumns = xmlQuery.getXmlColumns();
 			if (xmlColumns != null) {
@@ -138,7 +152,8 @@ public class Capturer {
 			}
 		}
 		long lSpentTime = System.currentTimeMillis() - lInitTime;
-		logger.info(". End getBatchPoints. Measurement: " + sMsmtName + ". " 
+		logger.info(". End getBatchPoints. Measurement: " 
+				+ sMsmtName + ". Query: " + xmlQuery.getId() + ". " 
 				+ iNumRegsQuery + " records readed from Source DB. " 
 				+ iNumBatchPoints + " batchPoints to be written into influx."
 				+ " Time spent (ms):" + lSpentTime);
@@ -148,6 +163,16 @@ public class Capturer {
 			batchPoints = null;
 		}
     	return batchPoints;
+    }
+    
+    private void addExtraTags(Builder bPoint, String sExtraTags) {
+    	if (sExtraTags != null) {
+        	String[] asExtraTags = sExtraTags.split(",");
+        	for (int i=0; i < asExtraTags.length; i++) {
+        		String[] asExtraTagNameValue = asExtraTags[i].split("=");
+        		bPoint.tag(asExtraTagNameValue[0], asExtraTagNameValue[1]);
+        	}
+    	}
     }
     
 }

@@ -22,15 +22,15 @@ public class DynamicSelect {
         this.fristIteration = fristIteration;
     }
 
-    public void preparedStatement(String select, List<String> arguments, List<String> parametersIN) {
+    public void preparedStatement(String select, List<String> lsParameters, List<String> lsParametersIN) {
         try {
-        	L4j.getL4j().debug("RSN. select: " + select + ". arguments.size(): " + arguments.size() + ". parametersIN.size(): " + parametersIN.size());
+        	L4j.getL4j().debug("select: " + select + ". lsParameters.size(): " + lsParameters.size() + ". lsParametersIN.size(): " + lsParametersIN.size());
             StringBuilder selectIN = new StringBuilder();
-            if(parametersIN != null) {
-                for(int i = 0; i<parametersIN.size(); i++){
+            if(lsParametersIN != null) {
+                for(int i = 0; i<lsParametersIN.size(); i++){
                     selectIN.append("?,");
                 }
-                arguments.addAll(parametersIN);
+                lsParameters.addAll(lsParametersIN);
                 if (selectIN.length() > 0) {
                 	select = select + " (" + selectIN.deleteCharAt(selectIN.length()-1) + ")";
                 }
@@ -38,18 +38,15 @@ public class DynamicSelect {
                     this.selecteInfo = select;
                 }
             }
-        	L4j.getL4j().debug("RSN. after for. arguments.size(): " + arguments.size() + ". parametersIN.size(): " + parametersIN.size());
             this.preparedStatement = this.connection.prepareStatement(select, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
             int numberArgument = 1;
-            //int numberArgument = 0;
-            for(String argument:arguments){
-                L4j.getL4j().debug("RSN. arguments.size(): " + arguments.size() + ". argument: " + argument);
+            for(String sParameter:lsParameters){
                 if(this.fristIteration) {
-                    this.selecteInfo = this.selecteInfo.replaceFirst("\\?", argument);
+                    this.selecteInfo = this.selecteInfo.replaceFirst("\\?", sParameter);
                 }
-                //RSN 
-                if (arguments.size() > 0) {
-                	this.preparedStatement.setString(numberArgument++, argument);
+                if (lsParameters.size() > 0) {
+                	L4j.getL4j().debug("select: " + select + ". lsParameters.size(): " + lsParameters.size() + ". numberArgument: " + numberArgument);
+                	this.preparedStatement.setString(numberArgument++, sParameter);
                 }
             }
             if(this.fristIteration) {

@@ -5,7 +5,17 @@ import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlValue;
 
 /**
- * Parameters for queries
+ * Parameters for queries.
+ * In the same order as the query conditions.
+ * Attributes:
+ *   - type: column or literal - default literal
+ *           if type is literal or does not exist, the value of the parameter is passed literally for the query
+ *           if type is column, the value of the parameter must contains the name of a column of the statement element
+ *                        then, the value from this column is passed in for the query
+ *   - argument: IN or null - default null
+ *           if argument is IN, the value of the parameter is used for the WHERE ... IN condition of the query
+ *           for this version, the query only can contain one WHERE ... IN condition and it must be at the end of the query
+ * 
  */
 @XmlRootElement(name="Parameter")
 public class XmlParameter {
