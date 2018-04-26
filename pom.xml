@@ -12,7 +12,7 @@
     <description>Java daemon program to get performance information from Oracle and save it into InfluxDB</description>
     <properties>
         <assembly.version>3.1.0</assembly.version>
-        <influxdbJava.version>2.10-SNAPSHOT</influxdbJava.version>
+        <influxdbJava.version>2.9</influxdbJava.version>
         <jdk.version>1.8</jdk.version>
         <log4jApi.version>2.11.0</log4jApi.version>
         <log4jCore.version>2.11.0</log4jCore.version>
