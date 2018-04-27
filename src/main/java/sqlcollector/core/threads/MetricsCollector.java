@@ -13,7 +13,7 @@ import org.influxdb.dto.BatchPoints;
  * This thread gets the metrics information from source database and saves it to destination database
  */
 
-public class MetricsCollector implements Runnable {
+public class MetricsCollector extends Thread implements Runnable {
 
     private String sThreadId;
     private final Capturer capturer;
@@ -21,6 +21,9 @@ public class MetricsCollector implements Runnable {
     private long lTimeToRW;
 
     public MetricsCollector(String sThreadId, Capturer capturer, InfluxWriter influxWriter, long lTimeToRW) {
+        L4j.getL4j().info("################################################################");
+    	L4j.getL4j().info("# MetricsCollector. Creating thread for " + sThreadId);
+        L4j.getL4j().info("################################################################");
         this.sThreadId = sThreadId;
         this.capturer = capturer;
         this.influxWriter = influxWriter;
@@ -28,7 +31,7 @@ public class MetricsCollector implements Runnable {
     }
 
     public void run(){
-    	L4j.getL4j().info(sThreadId + ". MetricsCollector. Init run.");
+    	L4j.getL4j().debug(sThreadId + ". MetricsCollector. Init run.");
         Thread.currentThread().setName(sThreadId);
 		long lInitTime = System.currentTimeMillis();
         try {
@@ -48,7 +51,7 @@ public class MetricsCollector implements Runnable {
 		} catch (InterruptedException e) {
 			L4j.getL4j().error(sThreadId + ". MetricsCollector. run. Interrupted while sleeping. Exception: " + e.getMessage());
 		}
-    	L4j.getL4j().info(sThreadId + ". MetricsCollector. End run.");
+    	L4j.getL4j().debug(sThreadId + ". MetricsCollector. End run.");
     }
     
     /*

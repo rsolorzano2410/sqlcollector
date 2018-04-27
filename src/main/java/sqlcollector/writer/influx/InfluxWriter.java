@@ -35,7 +35,7 @@ public class InfluxWriter {
         				influxDB.write(batchPoints);
     		    	}
     				lSpentTime = System.currentTimeMillis() - lInitTime;
-    				L4j.getL4j().info("writeToInflux. Time spent writting to influx (ms):" + lSpentTime);
+    				L4j.getL4j().debug("writeToInflux. Time spent writting to influx (ms):" + lSpentTime);
     				if (lSpentTime > (lTimeToWrite / 2)) {
     					L4j.getL4j().warn("writeToInflux. Time spent writting to influx (ms):" + lSpentTime + ". Greater than half: " + lTimeToWrite);
     				}

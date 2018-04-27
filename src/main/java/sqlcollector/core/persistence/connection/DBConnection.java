@@ -80,6 +80,7 @@ public class DBConnection {
 		    	Pong pong = influxDB.ping();
 		    	L4j.getL4j().debug("getInfluxDB. " + pong.toString());
             	bIsConnected = (pong != null && pong.isGood());
+                L4j.getL4j().info("Connected to DB (Host: " + sDbHost + " Port: " + lDbPort + " DataBase: " + sDbDatabase + ")");
         	} catch (Exception e) {
         		L4j.getL4j().warn("getInfluxDB. Exception: " + e.getMessage());
 				lSpentTime = System.currentTimeMillis() - lInitTime;
@@ -95,6 +96,7 @@ public class DBConnection {
 	            }
         	}
         }
+        if (!bIsConnected) influxDB = null;
     	return influxDB;
     }
     

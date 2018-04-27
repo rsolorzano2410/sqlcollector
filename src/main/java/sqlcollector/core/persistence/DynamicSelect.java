@@ -68,7 +68,7 @@ public class DynamicSelect {
                 long serverIn = (System.currentTimeMillis() - start_time);
                 L4j.getL4j().debug("Time executing query (ms): " + String.valueOf(serverIn));
             } catch (SQLException e) {
-                e.printStackTrace();
+                L4j.getL4j().error("Worker " + Thread.currentThread().getName() + ". Error executing query: " + this.selecteInfo + ". Exception message: " + e.getMessage());
             }
         }
         return rs;

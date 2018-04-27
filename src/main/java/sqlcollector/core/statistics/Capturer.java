@@ -152,7 +152,7 @@ public class Capturer {
 			}
 		}
 		long lSpentTime = System.currentTimeMillis() - lInitTime;
-		logger.info(". End getBatchPoints. Measurement: " 
+		logger.debug(". End getBatchPoints. Measurement: " 
 				+ sMsmtName + ". Query: " + xmlQuery.getId() + ". " 
 				+ iNumRegsQuery + " records readed from Source DB. " 
 				+ iNumBatchPoints + " batchPoints to be written into influx."

@@ -44,7 +44,7 @@ public class Utils {
     /*
      * getInfluxDBConnection. Gets InfluxDB connection.
      */
-	public static InfluxDB getInfluxDBConnection(XmlDestDatabase xmlDestDatabase) throws SQLException, KeyManagementException, NoSuchAlgorithmException, KeyStoreException, CertificateException, IOException, InterruptedException {
+	public static InfluxDB getInfluxDBConnection(XmlDestDatabase xmlDestDatabase, Long lTimeToConnect) throws SQLException, KeyManagementException, NoSuchAlgorithmException, KeyStoreException, CertificateException, IOException, InterruptedException {
     	InfluxDB influxDB = null;
     	String sHost = xmlDestDatabase.getHost();
     	long lPort = xmlDestDatabase.getPort();
@@ -52,12 +52,10 @@ public class Utils {
         String sUsername = xmlDestDatabase.getUsername();
         String sPassword = xmlDestDatabase.getPassword();
     	long lReconnectTimeoutSecs = xmlDestDatabase.getReconnectTimeoutSecs();
-    	Long lTimeToConnect = null;
     	Boolean bSsl = xmlDestDatabase.getSsl();
     	String sSslCertFilePath = xmlDestDatabase.getSslCertFilePath();
     	
     	influxDB = DBConnection.getInfluxDBConnection(sHost, lPort, sDbName, sUsername, sPassword, bSsl, sSslCertFilePath, lReconnectTimeoutSecs, lTimeToConnect);
-        L4j.getL4j().info("Connected to DB (Host: " + sHost + " Port: " + lPort + " DataBase: " + sDbName + ")");
         return influxDB;
     }
 	
