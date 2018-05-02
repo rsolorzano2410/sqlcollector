@@ -189,7 +189,7 @@ public class ReadConfXml {
     		if (xmlQueryFound != null) {
     			xmlQuery.setXmlStatement(xmlQueryFound.getXmlStatement());
     			xmlQuery.setXmlColumns(xmlQueryFound.getXmlColumns());
-    			L4j.getL4j().debug("completeXmlQueries. found sXmlQueryId: " + sXmlQueryId + ". statement: " + xmlQuery.getXmlStatement().getStatement() + ".RRRRRRRRRRRRRRRRR");
+    			L4j.getL4j().debug("completeXmlQueries. found sXmlQueryId: " + sXmlQueryId + ". statement: " + xmlQuery.getXmlStatement().getStatement());
     		}
     		lsXmlQueriesRet.add(xmlQuery);
     	}
@@ -209,10 +209,10 @@ public class ReadConfXml {
             jaxbUnmarshaller = jaxbContext.createUnmarshaller();
             object =  jaxbUnmarshaller.unmarshal(file);
         } catch (JAXBException e) {
-            throw new SQLCollectorException("ReadQueryXml Exception:", e);
+            throw new SQLCollectorException("ReadConfXml Exception:", e);
         }
         if(object == null){
-            throw new SQLCollectorException("ReadQueryXml Exception: querys is null");
+            throw new SQLCollectorException("ReadConfXml Exception: " + Constants.SQLCOLLECTOR_XML + " is null");
         } else {
             return type.cast(object);
         }

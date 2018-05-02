@@ -14,10 +14,14 @@ import java.sql.Connection;
 import java.sql.SQLException;
 
 import org.influxdb.InfluxDB;
+import org.influxdb.dto.Pong;
 
 public class Utils {
 
-    public static Connection getOracleDBConnection(XmlSourceDatabase xmlSourceDatabase) throws SQLException {
+    /*
+     * getOracleDBConnection. Gets Connection to Oracle DB with reconnect timeout specified into xmlSourceDatabase. Retries are done till connection is done.
+     */
+	public static Connection getOracleDBConnection(XmlSourceDatabase xmlSourceDatabase) throws SQLException, InterruptedException {
         Connection oracleDB = null;
         boolean isConnectToDB = false;
     	String sHost = xmlSourceDatabase.getHost();
@@ -26,22 +30,25 @@ public class Utils {
         String sUsername = xmlSourceDatabase.getUsername();
         String sPassword = xmlSourceDatabase.getPassword();
     	long lReconnectTimeoutSecs = xmlSourceDatabase.getReconnectTimeoutSecs();
+        L4j.getL4j().debug("Utils.getOracleDBConnection. xmlSourceDatabase.getId(): " + xmlSourceDatabase.getId() + ". isConnectToDB: " + isConnectToDB);
         while(!isConnectToDB) {
             oracleDB = DBConnection.getOracleConnection(sHost, lPort, sDbName, sUsername, sPassword);
             isConnectToDB = (oracleDB != null && !oracleDB.isClosed());
+            L4j.getL4j().debug("Utils.getOracleDBConnection. xmlSourceDatabase.getId(): " + xmlSourceDatabase.getId() + ". isConnectToDB: " + isConnectToDB);
             if(!isConnectToDB) {
-                try {
-                    Thread.sleep(lReconnectTimeoutSecs*1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+                Thread.sleep(lReconnectTimeoutSecs*1000);
             }
         }
         L4j.getL4j().info("Connected to DB (Host: " + sHost + " Port: " + lPort + " DataBase: " + sDbName + ")");
         return oracleDB;
     }
 
-    public static InfluxDB getInfluxDBConnection(XmlDestDatabase xmlDestDatabase) throws SQLException, KeyManagementException, NoSuchAlgorithmException, KeyStoreException, CertificateException, IOException, InterruptedException {
+    /*
+     * getInfluxDBConnection. Gets InfluxDB connection with reconnect timeout specified into xmlDestDatabase. 
+     * If lTimeToConnect is null, retries are done till connection is done,
+     * else retries are done during lTimeToConnect milliseconds.
+     */
+	public static InfluxDB getInfluxDBConnection(XmlDestDatabase xmlDestDatabase, Long lTimeToConnect) throws SQLException, KeyManagementException, NoSuchAlgorithmException, KeyStoreException, CertificateException, IOException, InterruptedException {
     	InfluxDB influxDB = null;
     	String sHost = xmlDestDatabase.getHost();
     	long lPort = xmlDestDatabase.getPort();
@@ -49,13 +56,32 @@ public class Utils {
         String sUsername = xmlDestDatabase.getUsername();
         String sPassword = xmlDestDatabase.getPassword();
     	long lReconnectTimeoutSecs = xmlDestDatabase.getReconnectTimeoutSecs();
-    	Long lTimeToConnect = null;
     	Boolean bSsl = xmlDestDatabase.getSsl();
     	String sSslCertFilePath = xmlDestDatabase.getSslCertFilePath();
     	
     	influxDB = DBConnection.getInfluxDBConnection(sHost, lPort, sDbName, sUsername, sPassword, bSsl, sSslCertFilePath, lReconnectTimeoutSecs, lTimeToConnect);
-        L4j.getL4j().info("Connected to DB (Host: " + sHost + " Port: " + lPort + " DataBase: " + sDbName + ")");
         return influxDB;
     }
+	
+	/*
+	 * isConnected. Returns if the database is connected or not. 
+	 */
+	public static boolean isConnected(Connection connection) throws SQLException {
+		boolean bIsConnected = false;
+        bIsConnected = (connection != null && !connection.isClosed());
+		return bIsConnected;
+	}
+
+	/*
+	 * isConnected. Returns if the database is connected or not. 
+	 */
+	public static boolean isConnected(InfluxDB influxDB) throws SQLException {
+		boolean bIsConnected = false;
+    	L4j.getL4j().debug("getInfluxDB. Calling ping");
+    	Pong pong = influxDB.ping();
+    	L4j.getL4j().debug("getInfluxDB. " + pong.toString());
+    	bIsConnected = (pong != null && pong.isGood());
+		return bIsConnected;
+	}
 
 }

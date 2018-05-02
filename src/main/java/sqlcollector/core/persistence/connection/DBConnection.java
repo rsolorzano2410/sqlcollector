@@ -18,13 +18,11 @@ import sqlcollector.core.logs.L4j;
 
 public class DBConnection {
 
-    private static Connection connection;
-	
     public static Connection getPgConnection(String sHost, long lPort, String sDbName, String sUsername, String sPassword) 
     		throws SQLException {
         String sJdbcDriver = "org.postgresql.Driver";
         String sConnectionString = "jdbc:postgresql://" + sHost + ":" + lPort + "/" + sDbName;
-        connection = getJdbcConnection(sJdbcDriver, sConnectionString, sUsername, sPassword);
+        Connection connection = getJdbcConnection(sJdbcDriver, sConnectionString, sUsername, sPassword);
         return connection;
     }
 
@@ -32,19 +30,18 @@ public class DBConnection {
     		throws SQLException {
         String sJdbcDriver = "oracle.jdbc.driver.OracleDriver";
         String sConnectionString = "jdbc:oracle:thin:@" + sHost + ":" + lPort + ":" + sDbName;
-        connection = getJdbcConnection(sJdbcDriver, sConnectionString, sUsername, sPassword);
+        Connection connection = getJdbcConnection(sJdbcDriver, sConnectionString, sUsername, sPassword);
         return connection;
     }
     
     private static Connection getJdbcConnection(String sJdbcDriver, String sConnectionString, String sUsername, String sPassword) 
     		throws SQLException {
-        if(connection == null || connection.isClosed()) {
-            try {
-                Class.forName(sJdbcDriver);
-            } catch (ClassNotFoundException e) {
-                e.printStackTrace();
-            }
+    	Connection connection = null;
+        try {
+            Class.forName(sJdbcDriver);
         	connection = DriverManager.getConnection(sConnectionString, sUsername, sPassword);
+        } catch (ClassNotFoundException e) {
+            L4j.getL4j().error("DBConnection.getJdbcConnection. Error getting JDBC Driver: " + sJdbcDriver);
         }
         return connection;
     }
@@ -60,7 +57,7 @@ public class DBConnection {
         	clientBuilder = SslManager.getSSLClientBuilder(sSslCertFilePath);
         }
         String sConnectionString = sProtocol + "://" + sDbHost + ":" + lDbPort;
-        L4j.getL4j().debug("getInfluxDB. Connecting to: " + sConnectionString);
+        L4j.getL4j().debug("getInfluxDBConnection. Connecting to: " + sConnectionString);
     	InfluxDB influxDB = InfluxDBFactory.connect(sConnectionString, sDbUser, sDbPassword, clientBuilder);
     	return influxDB;
     }
@@ -76,25 +73,27 @@ public class DBConnection {
         boolean bIsConnected = false;
         while (!bIsConnected) {
         	try {
-        		L4j.getL4j().debug("getInfluxDB. Calling ping");
+        		L4j.getL4j().debug("getInfluxDBConnection. Calling ping");
 		    	Pong pong = influxDB.ping();
-		    	L4j.getL4j().debug("getInfluxDB. " + pong.toString());
+		    	L4j.getL4j().debug("getInfluxDBConnection. " + pong.toString());
             	bIsConnected = (pong != null && pong.isGood());
+                L4j.getL4j().info("getInfluxDBConnection. Connected to DB (Host: " + sDbHost + " Port: " + lDbPort + " DataBase: " + sDbDatabase + ")");
         	} catch (Exception e) {
-        		L4j.getL4j().warn("getInfluxDB. Exception: " + e.getMessage());
+        		L4j.getL4j().warn("getInfluxDBConnection. Exception: " + e.getMessage());
 				lSpentTime = System.currentTimeMillis() - lInitTime;
 	            if (!bIsConnected) {
 		            if ((lTimeToConnect == null) || (lSpentTime + lReconnectTimeoutMs) < lTimeToConnect.longValue()) {
-		            	L4j.getL4j().warn("getInfluxDB. Error pinging to host:port:DB: " + sDbHost + ":" + lDbPort + ":" + sDbDatabase  
+		            	L4j.getL4j().warn("getInfluxDBConnection. Error pinging to host:port:DB: " + sDbHost + ":" + lDbPort + ":" + sDbDatabase  
 	                			+ ". Trying again after " + lReconnectTimeout + " seconds.");
 						Thread.sleep(lReconnectTimeoutMs);
 		            } else {
-		            	L4j.getL4j().warn("getInfluxDB. The process spent " + lSpentTime + " ms trying connection to host:port:DB: " + sDbHost + ":" + lDbPort + ":" + sDbDatabase);
+		            	L4j.getL4j().warn("getInfluxDBConnection. The process spent " + lSpentTime + " ms trying connection to host:port:DB: " + sDbHost + ":" + lDbPort + ":" + sDbDatabase);
 		            	break;
 		            }
 	            }
         	}
         }
+        if (!bIsConnected) influxDB = null;
     	return influxDB;
     }
     
