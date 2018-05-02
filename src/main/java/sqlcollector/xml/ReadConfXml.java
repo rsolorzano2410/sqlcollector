@@ -209,10 +209,10 @@ public class ReadConfXml {
             jaxbUnmarshaller = jaxbContext.createUnmarshaller();
             object =  jaxbUnmarshaller.unmarshal(file);
         } catch (JAXBException e) {
-            throw new SQLCollectorException("ReadQueryXml Exception:", e);
+            throw new SQLCollectorException("ReadConfXml Exception:", e);
         }
         if(object == null){
-            throw new SQLCollectorException("ReadQueryXml Exception: querys is null");
+            throw new SQLCollectorException("ReadConfXml Exception: " + Constants.SQLCOLLECTOR_XML + " is null");
         } else {
             return type.cast(object);
         }

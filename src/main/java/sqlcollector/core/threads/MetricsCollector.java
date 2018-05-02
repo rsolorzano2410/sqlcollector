@@ -39,12 +39,14 @@ public class MetricsCollector extends Thread implements Runnable {
 	        long lRetrieveTime = System.currentTimeMillis() - lInitTime;
 	    	L4j.getL4j().info(sThreadId + ". MetricsCollector. lRetrieveTime: " + lRetrieveTime);
 	    	//TODO: Send RetrieveTime to self metrics
-	    	long lTimeToWrite = this.lTimeToRW - lRetrieveTime;
-	    	if (lTimeToWrite > 0) {
-		        this.influxWriter.writeToInflux(lsBatchPoints, lTimeToWrite);
-		        long lWriteTime = System.currentTimeMillis() - lInitTime - lRetrieveTime;
-		    	L4j.getL4j().info(sThreadId + ". MetricsCollector. lWriteTime: " + lWriteTime);
-		    	//TODO: Send WriteTime to self metrics
+	    	if (lsBatchPoints != null && lsBatchPoints.size() > 0) {
+		    	long lTimeToWrite = this.lTimeToRW - lRetrieveTime;
+		    	if (lTimeToWrite > 0) {
+			        this.influxWriter.writeToInflux(lsBatchPoints, lTimeToWrite);
+			        long lWriteTime = System.currentTimeMillis() - lInitTime - lRetrieveTime;
+			    	L4j.getL4j().info(sThreadId + ". MetricsCollector. lWriteTime: " + lWriteTime);
+			    	//TODO: Send WriteTime to self metrics
+		    	}
 	    	}
 		} catch (SQLException e) {
 			L4j.getL4j().error(sThreadId + ". MetricsCollector. Error getting metrics: " + e.getMessage());
@@ -53,12 +55,4 @@ public class MetricsCollector extends Thread implements Runnable {
 		}
     	L4j.getL4j().debug(sThreadId + ". MetricsCollector. End run.");
     }
-    
-    /*
-     * name Measmt = DBStats
-     * fields retrieve_time, number_metrics
-     * tags: DbId, 
-     * extra_tags
-     * inherit, heredar extra tags
-     */
 }

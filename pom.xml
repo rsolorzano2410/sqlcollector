@@ -7,7 +7,7 @@
     <groupId>sqlcollector</groupId>
     <artifactId>sqlcollector</artifactId>
     <packaging>jar</packaging>
-    <version>0.1</version>
+    <version>0.2</version>
     <name>sql metrics collector</name>
     <description>Java daemon program to get performance information from Oracle and save it into InfluxDB</description>
     <properties>
@@ -36,11 +36,6 @@
             <artifactId>influxdb-java</artifactId>
             <version>${influxdbJava.version}</version>
         </dependency>
-        <dependency>
-            <groupId>com.oracle</groupId>
-            <artifactId>ojdbc7</artifactId>
-            <version>${oracle.version}</version>
-        </dependency>
     </dependencies>
     <build>
         <plugins>
@@ -57,7 +52,7 @@
                             <mainClass>sqlcollector.core.SQLCollector</mainClass>
                         </manifest>
                     </archive>
-                    <finalName>SQLCollector.0.1</finalName>
+                    <finalName>SQLCollector.0.2</finalName>
                     <appendAssemblyId>false</appendAssemblyId>
                 </configuration>
                 <executions>

@@ -1,6 +1,7 @@
 package sqlcollector.core.persistence;
 
 import sqlcollector.core.logs.L4j;
+import sqlcollector.utils.Utils;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -23,40 +24,45 @@ public class DynamicSelect {
     }
 
     public void preparedStatement(String select, List<String> lsParameters, List<String> lsParametersIN) {
-        try {
-        	L4j.getL4j().debug("select: " + select + ". lsParameters.size(): " + lsParameters.size() + ". lsParametersIN.size(): " + lsParametersIN.size());
-            StringBuilder selectIN = new StringBuilder();
-            if(lsParametersIN != null) {
-                for(int i = 0; i<lsParametersIN.size(); i++){
-                    selectIN.append("?,");
-                }
-                lsParameters.addAll(lsParametersIN);
-                if (selectIN.length() > 0) {
-                	select = select + " (" + selectIN.deleteCharAt(selectIN.length()-1) + ")";
-                }
-                if(this.fristIteration) {
-                    this.selecteInfo = select;
-                }
+    	L4j.getL4j().debug("select: " + select + ". lsParameters.size(): " + lsParameters.size() + ". lsParametersIN.size(): " + lsParametersIN.size());
+        StringBuilder selectIN = new StringBuilder();
+        if(lsParametersIN != null) {
+            for(int i = 0; i<lsParametersIN.size(); i++){
+                selectIN.append("?,");
             }
-            this.preparedStatement = this.connection.prepareStatement(select, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
-            int numberArgument = 1;
-            for(String sParameter:lsParameters){
-                if(this.fristIteration) {
-                    this.selecteInfo = this.selecteInfo.replaceFirst("\\?", sParameter);
-                }
-                if (lsParameters.size() > 0) {
-                	L4j.getL4j().debug("select: " + select + ". lsParameters.size(): " + lsParameters.size() + ". numberArgument: " + numberArgument);
-                	this.preparedStatement.setString(numberArgument++, sParameter);
-                }
+            lsParameters.addAll(lsParametersIN);
+            if (selectIN.length() > 0) {
+            	select = select + " (" + selectIN.deleteCharAt(selectIN.length()-1) + ")";
             }
             if(this.fristIteration) {
-                L4j.getL4j().debug("Worker " + Thread.currentThread().getName() + " QUERY: " + this.selecteInfo);
+                this.selecteInfo = select;
             }
-
-        } catch (SQLException e) {
-            e.printStackTrace();
         }
-        this.isPrepared = true;
+        try {
+        	boolean bIsConnected = Utils.isConnected(this.connection);
+        	if (bIsConnected) {
+    			this.preparedStatement = this.connection.prepareStatement(select, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
+    	        int numberArgument = 1;
+    	        for(String sParameter:lsParameters){
+    	            if(this.fristIteration) {
+    	                this.selecteInfo = this.selecteInfo.replaceFirst("\\?", sParameter);
+    	            }
+    	            if (lsParameters.size() > 0) {
+    	            	L4j.getL4j().debug("select: " + select + ". lsParameters.size(): " + lsParameters.size() + ". numberArgument: " + numberArgument);
+    	            	this.preparedStatement.setString(numberArgument++, sParameter);
+    	            }
+    	        }
+    	        if(this.fristIteration) {
+    	            L4j.getL4j().debug("Worker " + Thread.currentThread().getName() + " QUERY: " + this.selecteInfo);
+    	        }
+
+    	        this.isPrepared = true;
+        	} else {
+                L4j.getL4j().warn("DynamicSelect.preparedStatement. Worker " + Thread.currentThread().getName() + ". Connection is null or closed.");
+        	}
+		} catch (SQLException e) {
+            L4j.getL4j().error("DynamicSelect.preparedStatement. Worker " + Thread.currentThread().getName() + ". Error preparing query. Exception message: " + e.getMessage());
+		}
     }
 
     public ResultSet executeQuery() {
@@ -64,11 +70,12 @@ public class DynamicSelect {
         if(isPrepared) {
             try {
                 long start_time=System.currentTimeMillis();
-                rs = this.preparedStatement.executeQuery();
+            	if (this.preparedStatement != null && !this.preparedStatement.isClosed())
+            		rs = this.preparedStatement.executeQuery();
                 long serverIn = (System.currentTimeMillis() - start_time);
-                L4j.getL4j().debug("Time executing query (ms): " + String.valueOf(serverIn));
+                L4j.getL4j().debug("DynamicSelect.executeQuery. Worker " + Thread.currentThread().getName() + ". Spent time executing query (ms): " + serverIn);
             } catch (SQLException e) {
-                L4j.getL4j().error("Worker " + Thread.currentThread().getName() + ". Error executing query: " + this.selecteInfo + ". Exception message: " + e.getMessage());
+                L4j.getL4j().error("DynamicSelect.executeQuery. Worker " + Thread.currentThread().getName() + ". Error executing query: " + this.selecteInfo + ". Exception message: " + e.getMessage());
             }
         }
         return rs;
@@ -76,9 +83,10 @@ public class DynamicSelect {
 
     public void close() {
         try {
-            this.preparedStatement.close();
+        	if (this.preparedStatement != null && !this.preparedStatement.isClosed())
+        		this.preparedStatement.close();
         } catch (SQLException e) {
-            e.printStackTrace();
+        	L4j.getL4j().error("DynamicSelect.close. Error closing preparedStatement: " + e.getMessage());
         }
     }
 

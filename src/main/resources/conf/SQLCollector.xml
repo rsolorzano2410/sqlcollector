@@ -120,7 +120,13 @@
 						metricName: the value is written as a metricName in destination database (used in iterategroups), 
 						metricValue: the value is written as a metricValue in destination database (used in iterategroups)
 					</Type>
-					<DataType>data type of the value in destination database. Possible values: string, long, double, boolean</DataType>
+					<DataType>
+						data type of the value in destination database. 
+						Possible values: string for strings, 
+										integer for integer numbers, 
+										float for decimal numbers, 
+										boolean for booleans
+					</DataType>
 				</Column>
 -->
 				<Column>
@@ -139,13 +145,13 @@
 					<Name>PHY_BLK_R</Name>
 					<DestName>PHY_BLK_R</DestName>
 					<Type>field</Type>
-					<DataType>long</DataType>
+					<DataType>integer</DataType>
 				</Column>
 				<Column>
 					<Name>PHY_BLK_W</Name>
 					<DestName>PHY_BLK_W</DestName>
 					<Type>field</Type>
-					<DataType>long</DataType>
+					<DataType>integer</DataType>
 				</Column>
 			</Columns>
 		</Query>
@@ -169,7 +175,7 @@
 					<Name>TIME_WAITED</Name>
 					<DestName>TIME_WAITED</DestName>
 					<Type>field</Type>
-					<DataType>long</DataType>
+					<DataType>integer</DataType>
 				</Column>
 			</Columns>
 		</Query>
@@ -190,7 +196,7 @@
 					<Name>time</Name>
 					<DestName>stat_time</DestName>
 					<Type>field</Type>
-					<DataType>long</DataType>
+					<DataType>integer</DataType>
 				</Column>
 			</Columns>
 		</Query>
@@ -212,7 +218,7 @@
 					<Name>value</Name>
 					<DestName>value</DestName>
 					<Type>field</Type>
-					<DataType>long</DataType>
+					<DataType>integer</DataType>
 				</Column>
 			</Columns>
 		</Query>
@@ -236,13 +242,13 @@
 					<Name>ActualMb</Name>
 					<DestName>ActualMb</DestName>
 					<Type>field</Type>
-					<DataType>long</DataType>
+					<DataType>integer</DataType>
 				</Column>
 				<Column>
 					<Name>TotalUsado</Name>
 					<DestName>TotalUsado</DestName>
 					<Type>field</Type>
-					<DataType>long</DataType>
+					<DataType>integer</DataType>
 				</Column>
 			</Columns>
 		</Query>
@@ -268,7 +274,7 @@
 					<Name>total</Name>
 					<DestName>total</DestName>
 					<Type>field</Type>
-					<DataType>long</DataType>
+					<DataType>integer</DataType>
 				</Column>
 			</Columns>
 		</Query>

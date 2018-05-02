@@ -9,7 +9,6 @@ import sqlcollector.xml.mapping.metrics.XmlQuery;
 import sqlcollector.xml.mapping.metrics.XmlSQLCollector;
 import sqlcollector.xml.mapping.metrics.XmlSourceDatabase;
 
-import java.sql.SQLException;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -31,22 +30,15 @@ public class ThreadManager implements Runnable {
 			List<XmlDestDatabase> lsXmlDestDatabases = ReadConfXml.getDestDatabases(xmlSQLCollector);
 			List<XmlMeasurement> lsXmlMeasurements = ReadConfXml.getMeasurements(xmlSQLCollector);
 			List<XmlQuery> lsXmlQueries = ReadConfXml.getQueries(xmlSQLCollector);
-			try {
-                L4j.getL4j().debug("Calling this.launchThreads()");
-                this.launchThreads(lsXmlSourceDatabases, lsXmlDestDatabases, lsXmlMeasurements, lsXmlQueries);
-            } catch (SQLException e) {
-                e.printStackTrace();
-            } catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+            L4j.getL4j().debug("ThreadManager. run. Calling this.launchThreads()");
+            this.launchThreads(lsXmlSourceDatabases, lsXmlDestDatabases, lsXmlMeasurements, lsXmlQueries);
 		} catch (SQLCollectorException e2) {
             L4j.getL4j().error("ThreadManager. run. Error reading configuration file. Exception: " + e2.getMessage());
 		}
         L4j.getL4j().debug("ThreadManager. End run.");
     }
 
-    private void launchThreads(List<XmlSourceDatabase> lsXmlSourceDatabases, List<XmlDestDatabase> lsXmlDestDatabases, List<XmlMeasurement> lsXmlMeasurementsDef, List<XmlQuery> lsXmlQueries) throws SQLException, InterruptedException {
+    private void launchThreads(List<XmlSourceDatabase> lsXmlSourceDatabases, List<XmlDestDatabase> lsXmlDestDatabases, List<XmlMeasurement> lsXmlMeasurementsDef, List<XmlQuery> lsXmlQueries) {
         L4j.getL4j().debug("ThreadManager. Init launchThreads()");
         if (lsXmlSourceDatabases != null) {
         	int iNumSourceDatabases = lsXmlSourceDatabases.size();
@@ -64,7 +56,7 @@ public class ThreadManager implements Runnable {
             	XmlDestDatabase xmlDestDatabase = ReadConfXml.findXmlDestDatabase(xmlSourceDatabase, lsXmlDestDatabases);
 
             	List<XmlMeasurement> lsXmlMeasurements = ReadConfXml.findXmlMeasurements(xmlSourceDatabase, lsXmlMeasurementsDef, lsXmlQueries);
-                L4j.getL4j().debug("lsXmlMeasurements.size(): " + lsXmlMeasurements.size());
+                L4j.getL4j().debug("ThreadManager.launchThreads. lsXmlMeasurements.size(): " + lsXmlMeasurements.size());
                 MsmtThreadManager worker = new MsmtThreadManager(xmlSourceDatabase, xmlDestDatabase, lsXmlMeasurements);
                 executor.execute(worker);
             }
@@ -72,7 +64,7 @@ public class ThreadManager implements Runnable {
             try {
                 executor.awaitTermination(50, TimeUnit.SECONDS);
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                L4j.getL4j().critical("ThreadManager. Error while awaiting termination of threads: " + e.getMessage());
             }
             boolean waitToThreads = true;
             while (waitToThreads) {

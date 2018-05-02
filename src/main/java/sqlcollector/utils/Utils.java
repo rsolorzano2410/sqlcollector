@@ -30,9 +30,11 @@ public class Utils {
         String sUsername = xmlSourceDatabase.getUsername();
         String sPassword = xmlSourceDatabase.getPassword();
     	long lReconnectTimeoutSecs = xmlSourceDatabase.getReconnectTimeoutSecs();
+        L4j.getL4j().debug("Utils.getOracleDBConnection. xmlSourceDatabase.getId(): " + xmlSourceDatabase.getId() + ". isConnectToDB: " + isConnectToDB);
         while(!isConnectToDB) {
             oracleDB = DBConnection.getOracleConnection(sHost, lPort, sDbName, sUsername, sPassword);
             isConnectToDB = (oracleDB != null && !oracleDB.isClosed());
+            L4j.getL4j().debug("Utils.getOracleDBConnection. xmlSourceDatabase.getId(): " + xmlSourceDatabase.getId() + ". isConnectToDB: " + isConnectToDB);
             if(!isConnectToDB) {
                 Thread.sleep(lReconnectTimeoutSecs*1000);
             }
@@ -42,7 +44,9 @@ public class Utils {
     }
 
     /*
-     * getInfluxDBConnection. Gets InfluxDB connection.
+     * getInfluxDBConnection. Gets InfluxDB connection with reconnect timeout specified into xmlDestDatabase. 
+     * If lTimeToConnect is null, retries are done till connection is done,
+     * else retries are done during lTimeToConnect milliseconds.
      */
 	public static InfluxDB getInfluxDBConnection(XmlDestDatabase xmlDestDatabase, Long lTimeToConnect) throws SQLException, KeyManagementException, NoSuchAlgorithmException, KeyStoreException, CertificateException, IOException, InterruptedException {
     	InfluxDB influxDB = null;

@@ -30,7 +30,7 @@ public class MsmtThreadManager extends Thread implements Runnable {
 	private Connection connection;
 	private InfluxDB influxDB;
 
-    public MsmtThreadManager(XmlSourceDatabase xmlSourceDatabase, XmlDestDatabase xmlDestDatabase, List<XmlMeasurement> lsXmlMeasurements) throws SQLException {
+    public MsmtThreadManager(XmlSourceDatabase xmlSourceDatabase, XmlDestDatabase xmlDestDatabase, List<XmlMeasurement> lsXmlMeasurements) {
         L4j.getL4j().info("################################################################");
     	L4j.getL4j().info("# MsmtThreadManager. Creating thread for " + xmlSourceDatabase.getId());
         L4j.getL4j().info("################################################################");
@@ -101,7 +101,7 @@ public class MsmtThreadManager extends Thread implements Runnable {
             try {
                 executor.awaitTermination(50, TimeUnit.SECONDS);
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                L4j.getL4j().critical(xmlSourceDatabase.getId() + ". Error while awaiting termination of threads: " + e.getMessage());
             }
             boolean waitToThreads = true;
             boolean oneTime = true;
@@ -111,7 +111,7 @@ public class MsmtThreadManager extends Thread implements Runnable {
                     waitToThreads = false;
                 }
                 if(elapsed == this.lIntervalMs && oneTime){
-                    L4j.getL4j().critical("The time elapsed by thread is more than: " + this.lIntervalMs);
+                    L4j.getL4j().critical(xmlSourceDatabase.getId() + ". The time elapsed by thread is more than: " + this.lIntervalMs);
                     oneTime = false;
                 }
             }
@@ -149,8 +149,10 @@ public class MsmtThreadManager extends Thread implements Runnable {
 				this.connection = Utils.getOracleDBConnection(xmlSourceDatabase);
 	            bIsConnected = Utils.isConnected(this.connection);
         	} catch (SQLException e) {
+            	L4j.getL4j().warn("MsmtThreadManager. getConnection. SQLException: " + e.getMessage()
+    				+ ". bIsConnected: " + bIsConnected);
 	            if(!bIsConnected) {
-                	L4j.getL4j().warn("getConnection. Error connecting to DB: " + this.xmlSourceDatabase.getId()
+                	L4j.getL4j().warn("MsmtThreadManager. getConnection. Error connecting to DB: " + this.xmlSourceDatabase.getId()
                 			+ ". Trying reconnection after " + lReconnectTimeout + " seconds.");
 					Thread.sleep(lReconnectTimeoutMs);
 	            }

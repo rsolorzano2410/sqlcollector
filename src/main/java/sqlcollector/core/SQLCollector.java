@@ -15,7 +15,7 @@ public class SQLCollector {
     	L4j.getL4j().info("# Oracle metrics collector #");
         L4j.getL4j().info("#       SQLCollector       #");
         L4j.getL4j().info("#          v.0.2           #");
-        L4j.getL4j().info("#         27-04-18         #");
+        L4j.getL4j().info("#         02-05-18         #");
         L4j.getL4j().info("############################");
         L4j.getL4j().info("Loading settings: SQLCollector.xml");
         

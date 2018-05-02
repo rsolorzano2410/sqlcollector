@@ -33,8 +33,6 @@ public class Capturer {
     private XmlMeasurement xmlMeasurement;
     private Connection connection;
 
-    private L4j logger = L4j.getL4j();
-
     public Capturer(String sSourceDatabaseId, Connection connection, XmlDestDatabase xmlDestDatabase, XmlMeasurement xmlMeasurement) {
         this.sSourceDatabaseId = sSourceDatabaseId;
         this.connection = connection;
@@ -44,7 +42,7 @@ public class Capturer {
     
     private DynamicSelect getDynamicSelect(Boolean bFirstIteration, String sStatement, List<String> lsParameters,  List<String> lsParametersIN) {
         DynamicSelect dynamicSelect = new DynamicSelect(connection, bFirstIteration);
-        dynamicSelect.preparedStatement(sStatement, lsParameters, lsParametersIN);
+		dynamicSelect.preparedStatement(sStatement, lsParameters, lsParametersIN);
     	return dynamicSelect;
     }
     
@@ -78,18 +76,22 @@ public class Capturer {
 					}
 				}
                 DynamicSelect dynamicSelect = getDynamicSelect(bFirstIteration, sStatement, lsParameters, lsParametersIN);
-                ResultSet queryResultSet = getQueryResultSet(dynamicSelect);
-                BatchPoints batchPoints = getBatchPoints(queryResultSet, sMsmtName, xmlQuery);
-                lsBatchPoints.add(batchPoints);
-                queryResultSet.close();
-                dynamicSelect.close();
+                if (dynamicSelect != null) {
+                    ResultSet queryResultSet = getQueryResultSet(dynamicSelect);
+                    if (queryResultSet != null) {
+                        BatchPoints batchPoints = getBatchPoints(queryResultSet, sMsmtName, xmlQuery);
+                        lsBatchPoints.add(batchPoints);
+                        queryResultSet.close();
+                    }
+                    dynamicSelect.close();
+                }
 			}
 		}
     	return lsBatchPoints;
     }
     
     private BatchPoints getBatchPoints(ResultSet rsQuery, String sMsmtName, XmlQuery xmlQuery) throws SQLException {
-        logger.debug(". Begin getBatchPoints.");
+        L4j.getL4j().debug("Capturer. Begin getBatchPoints.");
 		long lInitTime = System.currentTimeMillis();
     	BatchPoints batchPoints = BatchPoints.database(this.xmlDestDatabase.getDbName()).build();
     	int iNumRegsQuery = 0;
@@ -112,35 +114,28 @@ public class Capturer {
 					String sFieldInflux = xmlColumn.getDestName();
 					String sTypeInflux = xmlColumn.getDataType();
 					String sType = xmlColumn.getType();
-					if (sType.equalsIgnoreCase("tag")) {
-						sTypeInflux = "";
-					}
 					String sFieldValue = rsQuery.getString(sFieldName);
-					if (sFieldValue != null) {
-						switch (sTypeInflux) {
-							case "": //case tag
-								bPoint.tag(sTagInflux, sFieldValue);
-								break;
-							case "long":
+					if (sType.equalsIgnoreCase("tag")) {
+						bPoint.tag(sTagInflux, sFieldValue);
+					} else {
+						if (sFieldValue != null) {
+							if (sTypeInflux.equalsIgnoreCase("integer")) {
 								bPoint.addField(sFieldInflux, rsQuery.getLong(sFieldName));
 								bPointHasFields = true;
-								break;
-							case "double":
+							} else if (sTypeInflux.equalsIgnoreCase("float")) {
 								bPoint.addField(sFieldInflux, rsQuery.getDouble(sFieldName));
 								bPointHasFields = true;
-								break;
-							case "boolean":
+							} else if (sTypeInflux.equalsIgnoreCase("boolean")) {
 								bPoint.addField(sFieldInflux, rsQuery.getBoolean(sFieldName));
 								bPointHasFields = true;
-								break;
-							case "string":
+							} else if (sTypeInflux.equalsIgnoreCase("string")) {
 								bPoint.addField(sFieldInflux, sFieldValue);
 								bPointHasFields = true;
-								break;
-							default: //case "others"
-								logger.warn(". getBatchPoints. Field " + sFieldInflux + " not added to: " + sMsmtName + ". " 
+							} else {
+								//case "others"
+								L4j.getL4j().warn("Capturer. getBatchPoints. Field " + sFieldInflux + " not added to: " + sMsmtName + ". " 
 										+ sTypeInflux + " not supported in types_influx mapping parameters.");
-								break;
+							}
 						}
 					}
 				}
@@ -152,14 +147,14 @@ public class Capturer {
 			}
 		}
 		long lSpentTime = System.currentTimeMillis() - lInitTime;
-		logger.debug(". End getBatchPoints. Measurement: " 
+		L4j.getL4j().debug("Capturer. End getBatchPoints. Measurement: " 
 				+ sMsmtName + ". Query: " + xmlQuery.getId() + ". " 
 				+ iNumRegsQuery + " records readed from Source DB. " 
 				+ iNumBatchPoints + " batchPoints to be written into influx."
 				+ " Time spent (ms):" + lSpentTime);
-		logger.debug(". End getBatchPoints. " + iNumBatchPoints + " batchPoints to write: " + batchPoints.toString());
+		L4j.getL4j().debug("Capturer. End getBatchPoints. " + iNumBatchPoints + " batchPoints to write: " + batchPoints.toString());
 		if (iNumBatchPoints == 0) {
-			logger.warn(". End getBatchPoints. NO batchPoints to write to: " + sMsmtName);
+			L4j.getL4j().warn("Capturer. End getBatchPoints. NO batchPoints to write to: " + sMsmtName);
 			batchPoints = null;
 		}
     	return batchPoints;
