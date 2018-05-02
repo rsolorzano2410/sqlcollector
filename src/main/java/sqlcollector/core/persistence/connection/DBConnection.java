@@ -18,8 +18,6 @@ import sqlcollector.core.logs.L4j;
 
 public class DBConnection {
 
-    //private static Connection connection;
-	
     public static Connection getPgConnection(String sHost, long lPort, String sDbName, String sUsername, String sPassword) 
     		throws SQLException {
         String sJdbcDriver = "org.postgresql.Driver";
@@ -39,14 +37,12 @@ public class DBConnection {
     private static Connection getJdbcConnection(String sJdbcDriver, String sConnectionString, String sUsername, String sPassword) 
     		throws SQLException {
     	Connection connection = null;
-        //if(connection == null || connection.isClosed()) {
-            try {
-                Class.forName(sJdbcDriver);
-            	connection = DriverManager.getConnection(sConnectionString, sUsername, sPassword);
-            } catch (ClassNotFoundException e) {
-                L4j.getL4j().error("DBConnection.getJdbcConnection. Error getting JDBC Driver: " + sJdbcDriver);
-            }
-        //}
+        try {
+            Class.forName(sJdbcDriver);
+        	connection = DriverManager.getConnection(sConnectionString, sUsername, sPassword);
+        } catch (ClassNotFoundException e) {
+            L4j.getL4j().error("DBConnection.getJdbcConnection. Error getting JDBC Driver: " + sJdbcDriver);
+        }
         return connection;
     }
 
