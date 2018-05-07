@@ -7,6 +7,7 @@ import sqlcollector.xml.mapping.metrics.XmlDestDatabase;
 import sqlcollector.xml.mapping.metrics.XmlMeasurement;
 import sqlcollector.xml.mapping.metrics.XmlQuery;
 import sqlcollector.xml.mapping.metrics.XmlSQLCollector;
+import sqlcollector.xml.mapping.metrics.XmlSelfMon;
 import sqlcollector.xml.mapping.metrics.XmlSourceDatabase;
 
 import java.util.List;
@@ -26,21 +27,27 @@ public class ThreadManager implements Runnable {
         L4j.getL4j().debug("ThreadManager. Init run.");
 		try {
 			XmlSQLCollector xmlSQLCollector = ReadConfXml.getXmlSQLCollector();
+			XmlSelfMon xmlSelfMon = ReadConfXml.getSelfMon(xmlSQLCollector);
 			List<XmlSourceDatabase> lsXmlSourceDatabases = ReadConfXml.getSourceDatabases(xmlSQLCollector);
 			List<XmlDestDatabase> lsXmlDestDatabases = ReadConfXml.getDestDatabases(xmlSQLCollector);
 			List<XmlMeasurement> lsXmlMeasurements = ReadConfXml.getMeasurements(xmlSQLCollector);
 			List<XmlQuery> lsXmlQueries = ReadConfXml.getQueries(xmlSQLCollector);
             L4j.getL4j().debug("ThreadManager. run. Calling this.launchThreads()");
-            this.launchThreads(lsXmlSourceDatabases, lsXmlDestDatabases, lsXmlMeasurements, lsXmlQueries);
+            this.launchThreads(xmlSelfMon, lsXmlSourceDatabases, lsXmlDestDatabases, lsXmlMeasurements, lsXmlQueries);
 		} catch (SQLCollectorException e2) {
             L4j.getL4j().error("ThreadManager. run. Error reading configuration file. Exception: " + e2.getMessage());
 		}
         L4j.getL4j().debug("ThreadManager. End run.");
     }
 
-    private void launchThreads(List<XmlSourceDatabase> lsXmlSourceDatabases, List<XmlDestDatabase> lsXmlDestDatabases, List<XmlMeasurement> lsXmlMeasurementsDef, List<XmlQuery> lsXmlQueries) {
+    private void launchThreads(XmlSelfMon xmlSelfMon, List<XmlSourceDatabase> lsXmlSourceDatabases, List<XmlDestDatabase> lsXmlDestDatabases, List<XmlMeasurement> lsXmlMeasurementsDef, List<XmlQuery> lsXmlQueries) {
         L4j.getL4j().debug("ThreadManager. Init launchThreads()");
-        if (lsXmlSourceDatabases != null) {
+        if (xmlSelfMon.getEnabled()) {
+        	XmlDestDatabase xmlDestDatabase = ReadConfXml.findXmlDestDatabase(xmlSelfMon.getDestDatabaseId(), lsXmlDestDatabases);
+        	SelfMonThread selfMonThread = new SelfMonThread(xmlSelfMon, xmlDestDatabase);
+        	new Thread(selfMonThread, "SelfMonThread").start();
+        }
+        if (lsXmlSourceDatabases != null && lsXmlSourceDatabases.size() > 0) {
         	int iNumSourceDatabases = lsXmlSourceDatabases.size();
             ExecutorService executor = Executors.newFixedThreadPool(iNumSourceDatabases);
             L4j.getL4j().info("################################################################");
@@ -53,7 +60,7 @@ public class ThreadManager implements Runnable {
              * - each measurement including the list of queries for this measurement
              */
             for (XmlSourceDatabase xmlSourceDatabase: lsXmlSourceDatabases) {
-            	XmlDestDatabase xmlDestDatabase = ReadConfXml.findXmlDestDatabase(xmlSourceDatabase, lsXmlDestDatabases);
+            	XmlDestDatabase xmlDestDatabase = ReadConfXml.findXmlDestDatabase(xmlSourceDatabase.getDestDatabaseId(), lsXmlDestDatabases);
 
             	List<XmlMeasurement> lsXmlMeasurements = ReadConfXml.findXmlMeasurements(xmlSourceDatabase, lsXmlMeasurementsDef, lsXmlQueries);
                 L4j.getL4j().debug("ThreadManager.launchThreads. lsXmlMeasurements.size(): " + lsXmlMeasurements.size());

@@ -114,9 +114,8 @@ public class ReadConfXml {
         return xmlQueryFound;
     }
 
-    public static XmlDestDatabase findXmlDestDatabase(XmlSourceDatabase xmlSourceDatabase, List<XmlDestDatabase> lsXmlDestDatabases) {
+    public static XmlDestDatabase findXmlDestDatabase(String sDestDatabaseId, List<XmlDestDatabase> lsXmlDestDatabases) {
     	XmlDestDatabase xmlDestDatabaseFound = null;
-    	String sDestDatabaseId = xmlSourceDatabase.getDestDatabaseId();
     	if (sDestDatabaseId != null) {
             xmlDestDatabaseFound = findXmlDestDatabaseById(sDestDatabaseId, lsXmlDestDatabases);
     	}

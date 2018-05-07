@@ -75,7 +75,7 @@
 			<DbName>ipasdb</DbName>
 			<Username>admin</Username>
 			<Password>password4admin</Password>
-			<Ssl>true</Ssl>
+			<Ssl>false</Ssl>
 			<SslCertFilePath>/etc/ssl/influxdb-selfsigned.crt</SslCertFilePath>
 			<ReconnectTimeoutSecs>20</ReconnectTimeoutSecs>
 		</DestDatabase>
@@ -551,19 +551,21 @@
 -->
 	</IterateGroups>
 	<SelfMon>
-		<!-- Section with the parameters for Self Monitoring -->
+		<!-- 
+			Section with the parameters for Self Monitoring 
+			enabled: true/false, enables/disables self monitoring
+			freq: send data Frequency in seconds
+			DestDatabaseId: string with the id of the database where the self monitoring will be saved
+			ExtraTags: string with extra tags in format tag1=value1,tag2=value2,...,tagN=valueN
+		-->
 		<enabled>true</enabled>
 		<freq>60</freq>
+		<DestDatabaseId>influxdb1</DestDatabaseId>
+		<ExtraTags>instance=sqlcollector01</ExtraTags>
 		<!-- 
-		#enabled:true/false, enables/disables self monitoring
-		#freq: send data Frequency
-		#prefix: prefix for measurement naming
-
 		prepare for next version 
 		#inherit device tags
-		#adds extra tags to the measurement, config should be set as a csv - tag1=value1,tag2=value2,...,tagN=valueN
 		<inheritdevicetags>true</inheritdevicetags>
-		<extratags>instance=sqlcollector01</extratags>
 		-->
 	</SelfMon>
 </SQLCollector>

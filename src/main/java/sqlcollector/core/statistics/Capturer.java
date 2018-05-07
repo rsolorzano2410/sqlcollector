@@ -2,9 +2,9 @@ package sqlcollector.core.statistics;
 
 import sqlcollector.core.logs.L4j;
 import sqlcollector.core.persistence.DynamicSelect;
+import sqlcollector.utils.Utils;
 import sqlcollector.xml.mapping.metrics.XmlColumn;
 import sqlcollector.xml.mapping.metrics.XmlColumns;
-import sqlcollector.xml.mapping.metrics.XmlDestDatabase;
 import sqlcollector.xml.mapping.metrics.XmlMeasurement;
 import sqlcollector.xml.mapping.metrics.XmlParameter;
 import sqlcollector.xml.mapping.metrics.XmlParameters;
@@ -16,10 +16,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import org.influxdb.dto.BatchPoints;
-import org.influxdb.dto.Point;
 import org.influxdb.dto.Point.Builder;
 
 /*
@@ -29,15 +27,23 @@ import org.influxdb.dto.Point.Builder;
 public class Capturer {
 
     private String sSourceDatabaseId;
-    private XmlDestDatabase xmlDestDatabase;
+    private String sXmlDestDatabaseName;
     private XmlMeasurement xmlMeasurement;
     private Connection connection;
 
-    public Capturer(String sSourceDatabaseId, Connection connection, XmlDestDatabase xmlDestDatabase, XmlMeasurement xmlMeasurement) {
+    public Capturer(String sSourceDatabaseId, Connection connection, String sXmlDestDatabaseName, XmlMeasurement xmlMeasurement) {
         this.sSourceDatabaseId = sSourceDatabaseId;
         this.connection = connection;
-        this.xmlDestDatabase = xmlDestDatabase;
+        this.sXmlDestDatabaseName = sXmlDestDatabaseName;
         this.xmlMeasurement = xmlMeasurement;
+    }
+    
+    public String getSourceDatabaseId() {
+    	return this.sSourceDatabaseId;
+    }
+    
+    public String getMeasurementId() {
+    	return this.xmlMeasurement.getId();
     }
     
     private DynamicSelect getDynamicSelect(Boolean bFirstIteration, String sStatement, List<String> lsParameters,  List<String> lsParametersIN) {
@@ -79,7 +85,7 @@ public class Capturer {
                 if (dynamicSelect != null) {
                     ResultSet queryResultSet = getQueryResultSet(dynamicSelect);
                     if (queryResultSet != null) {
-                        BatchPoints batchPoints = getBatchPoints(queryResultSet, sMsmtName, xmlQuery);
+                        BatchPoints batchPoints = getBatchPoints(queryResultSet, xmlQuery, sMsmtName);
                         lsBatchPoints.add(batchPoints);
                         queryResultSet.close();
                     }
@@ -90,20 +96,18 @@ public class Capturer {
     	return lsBatchPoints;
     }
     
-    private BatchPoints getBatchPoints(ResultSet rsQuery, String sMsmtName, XmlQuery xmlQuery) throws SQLException {
+    private BatchPoints getBatchPoints(ResultSet rsQuery, XmlQuery xmlQuery, String sMsmtName) throws SQLException {
         L4j.getL4j().debug("Capturer. Begin getBatchPoints.");
 		long lInitTime = System.currentTimeMillis();
-    	BatchPoints batchPoints = BatchPoints.database(this.xmlDestDatabase.getDbName()).build();
+    	BatchPoints batchPoints = Utils.getEmptyBatchPoints(this.sXmlDestDatabaseName);
     	int iNumRegsQuery = 0;
     	int iNumBatchPoints = 0;
 		while (rsQuery.next()) {
 			iNumRegsQuery++;
-			Builder bPoint = Point.measurement(sMsmtName);
-			long lTimeNs = System.currentTimeMillis();
-			bPoint.time(lTimeNs, TimeUnit.MILLISECONDS);
+			Builder bPoint = Utils.getInitialBPoint(sMsmtName);
 			bPoint.tag("DbId", sSourceDatabaseId);
 			bPoint.tag("QueryId", xmlQuery.getId());
-			addExtraTags(bPoint, this.xmlMeasurement.getExtraTags());
+			bPoint = Utils.addTagsToBPoint(bPoint, this.xmlMeasurement.getExtraTags());
 			boolean bPointHasFields = false;
 			XmlColumns xmlColumns = xmlQuery.getXmlColumns();
 			if (xmlColumns != null) {
@@ -142,8 +146,7 @@ public class Capturer {
 			}
 			if (bPointHasFields) {
 				iNumBatchPoints++;
-				Point point = bPoint.build();
-				batchPoints.point(point);
+				batchPoints = Utils.addBPointToBatchPoints(batchPoints, bPoint);
 			}
 		}
 		long lSpentTime = System.currentTimeMillis() - lInitTime;
@@ -158,16 +161,6 @@ public class Capturer {
 			batchPoints = null;
 		}
     	return batchPoints;
-    }
-    
-    private void addExtraTags(Builder bPoint, String sExtraTags) {
-    	if (sExtraTags != null) {
-        	String[] asExtraTags = sExtraTags.split(",");
-        	for (int i=0; i < asExtraTags.length; i++) {
-        		String[] asExtraTagNameValue = asExtraTags[i].split("=");
-        		bPoint.tag(asExtraTagNameValue[0], asExtraTagNameValue[1]);
-        	}
-    	}
     }
     
 }
