@@ -92,8 +92,8 @@ public class MsmtThreadManager extends Thread implements Runnable {
             for (XmlMeasurement xmlMeasurement: lsXmlMeasurements) {
                 String sMeasurementId = xmlMeasurement.getId();
                 String sThreadId = xmlSourceDatabase.getId() + "_" + sMeasurementId;
-                Capturer capturer = new Capturer(xmlSourceDatabase.getId(), connection, xmlDestDatabase, xmlMeasurement);
-                InfluxWriter influxWriter = new InfluxWriter(xmlDestDatabase, this.influxDB);
+                Capturer capturer = new Capturer(xmlSourceDatabase.getId(), connection, xmlDestDatabase.getDbName(), xmlMeasurement);
+                InfluxWriter influxWriter = new InfluxWriter(this.influxDB, this.xmlDestDatabase.getDbName(), sMeasurementId, (this.xmlDestDatabase.getReconnectTimeoutSecs()*1000));
                 MetricsCollector worker = new MetricsCollector(sThreadId, capturer, influxWriter, lTimeToRW);
                 executor.execute(worker);
             }
@@ -169,13 +169,9 @@ public class MsmtThreadManager extends Thread implements Runnable {
 		long lInitTime = System.currentTimeMillis();
 		long lSpentTime = 0;
 		
-		try {
-			this.influxDB = Utils.getInfluxDBConnection(xmlDestDatabase, lTimeToConnect);
-			if (this.influxDB != null) {
-				bIsConnected = Utils.isConnected(this.influxDB);
-			}
-		} catch (Exception e) {
-			//Exception treated in Utils
+		this.influxDB = Utils.getInfluxDBConnection(xmlDestDatabase, lTimeToConnect);
+		if (this.influxDB != null) {
+			bIsConnected = Utils.isConnected(this.influxDB);
 		}
 
     	lSpentTime = System.currentTimeMillis() - lInitTime;

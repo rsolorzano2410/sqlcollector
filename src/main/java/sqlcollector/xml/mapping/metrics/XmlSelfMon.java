@@ -11,7 +11,8 @@ public class XmlSelfMon {
 
     private boolean enabled;
     private int freq;
-    private String prefix;
+    private String sDestDatabaseId;
+    private String sExtraTags;
 
     public boolean getEnabled() {
         return enabled;
@@ -31,13 +32,22 @@ public class XmlSelfMon {
         this.freq = freq;
     }
 
-    public String getPrefix() {
-        return prefix;
+    public String getDestDatabaseId() {
+        return sDestDatabaseId;
     }
 
-    @XmlElement(name="prefix")
-    public void setPrefix(String prefix) {
-        this.prefix = prefix;
+    @XmlElement(name="DestDatabaseId")
+    public void setDestDatabaseId(String sDestDatabaseId) {
+        this.sDestDatabaseId = sDestDatabaseId;
+    }
+
+    public String getExtraTags() {
+        return sExtraTags;
+    }
+
+    @XmlElement(name="ExtraTags")
+    public void setExtraTags(String sExtraTags) {
+        this.sExtraTags = sExtraTags;
     }
 
 }

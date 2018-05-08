@@ -46,7 +46,7 @@ public class DBConnection {
         return connection;
     }
 
-	public static InfluxDB getInfluxDBConnection(String sDbHost, Long lDbPort, String sDbDatabase, String sDbUser, String sDbPassword, 
+	private static InfluxDB getInfluxDBConnection(String sDbHost, Long lDbPort, String sDbDatabase, String sDbUser, String sDbPassword, 
 			Boolean bSsl, String sSslCertFilePath) 
 			throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException, CertificateException, IOException 
 	{
@@ -63,16 +63,16 @@ public class DBConnection {
     }
     
 	public static InfluxDB getInfluxDBConnection(String sDbHost, Long lDbPort, String sDbDatabase, String sDbUser, String sDbPassword, 
-			Boolean bSsl, String sSslCertFilePath, long lReconnectTimeout, Long lTimeToConnect) 
-			throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException, CertificateException, IOException, InterruptedException 
+			Boolean bSsl, String sSslCertFilePath, long lReconnectTimeout, Long lTimeToConnect) throws InterruptedException 
 	{
-    	InfluxDB influxDB = getInfluxDBConnection(sDbHost, lDbPort, sDbDatabase, sDbUser, sDbPassword, bSsl, sSslCertFilePath);
+		InfluxDB influxDB = null;
 		long lInitTime = System.currentTimeMillis();
 		long lSpentTime = 0;
         long lReconnectTimeoutMs = lReconnectTimeout * 1000;
         boolean bIsConnected = false;
         while (!bIsConnected) {
         	try {
+            	influxDB = getInfluxDBConnection(sDbHost, lDbPort, sDbDatabase, sDbUser, sDbPassword, bSsl, sSslCertFilePath);
         		L4j.getL4j().debug("getInfluxDBConnection. Calling ping");
 		    	Pong pong = influxDB.ping();
 		    	L4j.getL4j().debug("getInfluxDBConnection. " + pong.toString());
