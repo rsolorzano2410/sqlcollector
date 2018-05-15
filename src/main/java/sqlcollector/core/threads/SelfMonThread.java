@@ -12,6 +12,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.logging.log4j.Logger;
 import org.influxdb.InfluxDB;
 import org.influxdb.dto.BatchPoints;
 import org.influxdb.dto.Point.Builder;
@@ -20,17 +21,22 @@ import sqlcollector.core.logs.L4j;
 import sqlcollector.utils.Utils;
 import sqlcollector.writer.influx.InfluxWriter;
 import sqlcollector.xml.mapping.metrics.XmlDestDatabase;
+import sqlcollector.xml.mapping.metrics.XmlLoggingConf;
 import sqlcollector.xml.mapping.metrics.XmlSelfMon;
 
 public class SelfMonThread implements Runnable {
 
+	private Logger logger;
     private XmlSelfMon xmlSelfMon;
     private XmlDestDatabase xmlDestDatabase;
 
-    public SelfMonThread(XmlSelfMon xmlSelfMon, XmlDestDatabase xmlDestDatabase) {
-        L4j.getL4j().info("################################################################");
-    	L4j.getL4j().info("# SelfMonThread. Creating thread for self monitoring.");
-        L4j.getL4j().info("################################################################");
+    public SelfMonThread(XmlLoggingConf xmlLoggingConf, XmlSelfMon xmlSelfMon, XmlDestDatabase xmlDestDatabase) {
+    	this.logger = L4j.getLogger("SelfMon", xmlLoggingConf.getLogPath(), xmlSelfMon.getLogFileName(), 
+				xmlSelfMon.getLogLevel(), xmlLoggingConf.getLogPattern(), xmlLoggingConf.getLogRollingPattern());
+        logger.info("################################################################");
+    	logger.info("# SelfMonThread. Creating thread for self monitoring.");
+    	logger.info("# SelfMonThread. LogFileName: " + xmlSelfMon.getLogFileName() + ". LogLevel: " + xmlSelfMon.getLogLevel());
+        logger.info("################################################################");
         this.xmlSelfMon = xmlSelfMon;
         this.xmlDestDatabase = xmlDestDatabase;
 	}
@@ -40,7 +46,7 @@ public class SelfMonThread implements Runnable {
         long lFreqMs = this.xmlSelfMon.getFreq() * 1000;
         long lSleepTimeMs = lFreqMs;
         while (true) {
-            L4j.getL4j().info("SelfMonThread. Init run.");
+            logger.info("SelfMonThread. Init run.");
             long lInitTimeMs = System.currentTimeMillis();
             long lSpentTimeMs = 0;
             try {
@@ -70,35 +76,35 @@ public class SelfMonThread implements Runnable {
         	                if (lSpentTimeMs < lFreqMs) {
         	                	lSleepTimeMs = lFreqMs - lSpentTimeMs;
         	                } else {
-        	                    L4j.getL4j().warn("SelfMonThread.run. Spent time (ms): " + lSpentTimeMs + ". Greater than configured frequency (ms): " + lFreqMs);
+        	                    logger.warn("SelfMonThread.run. Spent time (ms): " + lSpentTimeMs + ". Greater than configured frequency (ms): " + lFreqMs);
         	                }
-        	                L4j.getL4j().info("SelfMonThread.run. Spent time (ms): " + lSpentTimeMs + ". Sleeping for (ms): " + lSleepTimeMs);
+        	                logger.info("SelfMonThread.run. Spent time (ms): " + lSpentTimeMs + ". Sleeping for (ms): " + lSleepTimeMs);
         	                Thread.sleep(lSleepTimeMs);
                         } else {
-                            L4j.getL4j().warn("SelfMonThread.run. Spent time (ms): " + lSpentTimeMs + ". Greater than configured frequency (ms): " + lFreqMs);
+                            logger.warn("SelfMonThread.run. Spent time (ms): " + lSpentTimeMs + ". Greater than configured frequency (ms): " + lFreqMs);
         		    	}
         	    	}
             	}
             } catch (InterruptedException e) {
-				L4j.getL4j().error("SelfMonThread.run. Interrupted while sleeping. Exception: " + e.getMessage());
+				logger.error("SelfMonThread.run. Interrupted while sleeping. Exception: " + e.getMessage());
             }
-            L4j.getL4j().info("SelfMonThread. End run.");
+            logger.info("SelfMonThread. End run.");
         }
     }
     
     private InfluxDB getInfluxDB() throws InterruptedException {
-        L4j.getL4j().debug("SelfMonThread. Begin getInfluxDB.");
+        logger.debug("SelfMonThread. Begin getInfluxDB.");
 		long lInitTime = System.currentTimeMillis();
     	//Try connection to DestDB until it's done.
     	Long lTimeToConnect = null;
     	InfluxDB influxDB = Utils.getInfluxDBConnection(this.xmlDestDatabase, lTimeToConnect);
 		long lSpentTime = System.currentTimeMillis() - lInitTime;
-		L4j.getL4j().debug("SelfMonThread. End getInfluxDB. Time spent (ms):" + lSpentTime);
+		logger.debug("SelfMonThread. End getInfluxDB. Time spent (ms):" + lSpentTime);
     	return influxDB;
     }
     
     private List<BatchPoints> getSelfMonStats(String sMeasurementId) {
-        L4j.getL4j().debug("SelfMonThread. Begin getSelfMonStats.");
+        logger.debug("SelfMonThread. Begin getSelfMonStats.");
     	List<BatchPoints> lsBpsSelfMonStats = new LinkedList<BatchPoints>();
 		long lInitTime = System.currentTimeMillis();
     	BatchPoints bpsSelfMonStats = Utils.getEmptyBatchPoints(this.xmlDestDatabase.getDbName());
@@ -107,12 +113,12 @@ public class SelfMonThread implements Runnable {
 		bpsSelfMonStats = Utils.addBPointToBatchPoints(bpsSelfMonStats, bPoint);
     	lsBpsSelfMonStats.add(bpsSelfMonStats);
 		long lSpentTime = System.currentTimeMillis() - lInitTime;
-		L4j.getL4j().debug("SelfMonThread. End getSelfMonStats. Time spent (ms) getting self monitoring stats: " + lSpentTime);
+		logger.debug("SelfMonThread. End getSelfMonStats. Time spent (ms) getting self monitoring stats: " + lSpentTime);
     	return lsBpsSelfMonStats;
     }
     
     private void addFieldsToBPoint(Builder bPoint) {
-    	L4j.getL4j().debug("SelfMonThread. Init addFieldsToBPoint.");
+    	logger.debug("SelfMonThread. Init addFieldsToBPoint.");
         Runtime runtime = Runtime.getRuntime();
         MemoryMXBean memoryMXBean = ManagementFactory.getMemoryMXBean();
         CompilationMXBean compilationMXBean = ManagementFactory.getCompilationMXBean();
@@ -144,23 +150,23 @@ public class SelfMonThread implements Runnable {
         addFieldToBPoint(bPoint, "jvm.threads.thread_count", threadMXBean.getThreadCount());
 		// Add extra tags
         bPoint = Utils.addTagsToBPoint(bPoint, this.xmlSelfMon.getExtraTags());
-    	L4j.getL4j().debug("SelfMonThread. End addFieldsToBPoint.");
+    	logger.debug("SelfMonThread. End addFieldsToBPoint.");
     	return;
     }
 	
     private void addFieldToBPoint(Builder bPoint, String sFieldName, long lFieldValue) {
-    	L4j.getL4j().debug("SelfMonThread. addFieldToBPoint. Adding FieldName=FieldValue: " + sFieldName + "=" + lFieldValue);
+    	logger.debug("SelfMonThread. addFieldToBPoint. Adding FieldName=FieldValue: " + sFieldName + "=" + lFieldValue);
     	bPoint.addField(sFieldName, lFieldValue);
     	return;
     }
 	
     private void writeToInflux(InfluxDB influxDB, List<BatchPoints> lsBpsSelfMonStats, String sMeasurementId, long lTimeToWriteMs) throws InterruptedException {
-        L4j.getL4j().debug("SelfMonThread. Begin writeToInflux.");
+        logger.debug("SelfMonThread. Begin writeToInflux.");
 		long lInitTime = System.currentTimeMillis();
         InfluxWriter influxWriter = new InfluxWriter(influxDB, this.xmlDestDatabase.getDbName(), sMeasurementId, (this.xmlDestDatabase.getReconnectTimeoutSecs()*1000));
         influxWriter.writeToInflux(lsBpsSelfMonStats, lTimeToWriteMs, null);
 		long lSpentTime = System.currentTimeMillis() - lInitTime;
-		L4j.getL4j().debug("SelfMonThread. End getInfluxDB. Time spent (ms) writing self monitoring stats:" + lSpentTime);
+		logger.debug("SelfMonThread. End getInfluxDB. Time spent (ms) writing self monitoring stats:" + lSpentTime);
     	return;
     }
     

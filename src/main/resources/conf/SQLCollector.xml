@@ -23,7 +23,7 @@
 -->
 			</Measurements>
 			<LogFileName>oracledb1</LogFileName>
-			<LogLevel>debug</LogLevel>
+			<LogLevel>info</LogLevel>
 		</SourceDatabase>
 <!-- 
 		<SourceDatabase id="oracledb1">
@@ -396,6 +396,9 @@
 		</Measurement>
 	</Measurements>
 	<MeasurementGroups>
+	<!-- 
+	 MeasurementGroups ARE NOT USED FOR CURRENT VERSION
+	 -->
 		<MeasurementGroup id="msgr111">
 			<Measurements>
 				<Measurement id="msmt11"/>
@@ -410,6 +413,9 @@
 		</MeasurementGroup>
 	</MeasurementGroups>
 	<IterateGroups>
+	<!-- 
+	 IterateGroups ARE NOT USED FOR CURRENT VERSION
+	 -->
 		<IterateGroup id="msit1111">
 			<Query id="q_db_instances">
 <!-- 
@@ -557,15 +563,35 @@
 			freq: send data Frequency in seconds
 			DestDatabaseId: string with the id of the database where the self monitoring will be saved
 			ExtraTags: string with extra tags in format tag1=value1,tag2=value2,...,tagN=valueN
+			LogFileName: string with the name of the log file
+			LogLevel: string with the log level for the log file. valid values: trace,debug,info,warn,error,fatal
 		-->
 		<enabled>true</enabled>
 		<freq>60</freq>
 		<DestDatabaseId>influxdb1</DestDatabaseId>
 		<ExtraTags>instance=sqlcollector01</ExtraTags>
+		<LogFileName>SelfMonLogs</LogFileName>
+		<LogLevel>debug</LogLevel>
 		<!-- 
 		prepare for next version 
 		#inherit device tags
 		<inheritdevicetags>true</inheritdevicetags>
 		-->
 	</SelfMon>
+	<LoggingConf>
+		<!-- 
+			Section with the generic parameters for logging 
+			LogPath: string with the path for logs
+			LogFileName: string with the name of the generic log file
+			LogLevel: string with the log level for the log file. valid values: trace,debug,info,warn,error,fatal
+			LogPattern: string with the pattern for logs
+			LogRollingPattern: string with the rolling pattern for logs.
+				The logs to be rolled will be saved joining: LogPath+LogFileName+LogRollingPattern+".log.gz"
+		-->
+		<LogPath>logs/</LogPath>
+		<LogFileName>SQLCollector</LogFileName>
+		<LogLevel>debug</LogLevel>
+		<LogPattern>[%5p] - %d{yyyy-MM-dd HH:mm:ss.SSS} - %m%n</LogPattern>
+		<LogRollingPattern>-%d{yyyy-MM-dd}</LogRollingPattern>
+	</LoggingConf>
 </SQLCollector>

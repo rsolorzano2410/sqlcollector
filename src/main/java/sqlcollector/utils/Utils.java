@@ -30,7 +30,6 @@ public class Utils {
         String sUsername = xmlSourceDatabase.getUsername();
         String sPassword = xmlSourceDatabase.getPassword();
     	long lReconnectTimeoutSecs = xmlSourceDatabase.getReconnectTimeoutSecs();
-        L4j.getL4j().debug("Utils.getOracleDBConnection. xmlSourceDatabase.getId(): " + xmlSourceDatabase.getId() + ". isConnectToDB: " + isConnectToDB);
         while(!isConnectToDB) {
             oracleDB = DBConnection.getOracleConnection(sHost, lPort, sDbName, sUsername, sPassword);
             isConnectToDB = (oracleDB != null && !oracleDB.isClosed());

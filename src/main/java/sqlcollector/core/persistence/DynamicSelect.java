@@ -1,6 +1,5 @@
 package sqlcollector.core.persistence;
 
-import sqlcollector.core.logs.L4j;
 import sqlcollector.utils.Utils;
 
 import java.sql.Connection;
@@ -9,22 +8,26 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 
+import org.apache.logging.log4j.Logger;
+
 public class DynamicSelect {
 
+	private Logger logger;
     private Connection connection;
     private PreparedStatement preparedStatement;
     private boolean isPrepared;
     private Boolean fristIteration;
     private String selecteInfo;
 
-    public DynamicSelect(Connection connection, Boolean fristIteration) {
+    public DynamicSelect(Logger logger, Connection connection, Boolean fristIteration) {
+        this.logger = logger;
         this.connection = connection;
         this.isPrepared = false;
         this.fristIteration = fristIteration;
     }
 
     public void preparedStatement(String select, List<String> lsParameters, List<String> lsParametersIN) {
-    	L4j.getL4j().debug("select: " + select + ". lsParameters.size(): " + lsParameters.size() + ". lsParametersIN.size(): " + lsParametersIN.size());
+    	logger.debug("select: " + select + ". lsParameters.size(): " + lsParameters.size() + ". lsParametersIN.size(): " + lsParametersIN.size());
         StringBuilder selectIN = new StringBuilder();
         if(lsParametersIN != null) {
             for(int i = 0; i<lsParametersIN.size(); i++){
@@ -48,20 +51,20 @@ public class DynamicSelect {
     	                this.selecteInfo = this.selecteInfo.replaceFirst("\\?", sParameter);
     	            }
     	            if (lsParameters.size() > 0) {
-    	            	L4j.getL4j().debug("select: " + select + ". lsParameters.size(): " + lsParameters.size() + ". numberArgument: " + numberArgument);
+    	            	logger.debug("select: " + select + ". lsParameters.size(): " + lsParameters.size() + ". numberArgument: " + numberArgument);
     	            	this.preparedStatement.setString(numberArgument++, sParameter);
     	            }
     	        }
     	        if(this.fristIteration) {
-    	            L4j.getL4j().debug("Worker " + Thread.currentThread().getName() + " QUERY: " + this.selecteInfo);
+    	            logger.debug("Worker " + Thread.currentThread().getName() + " QUERY: " + this.selecteInfo);
     	        }
 
     	        this.isPrepared = true;
         	} else {
-                L4j.getL4j().warn("DynamicSelect.preparedStatement. Worker " + Thread.currentThread().getName() + ". Connection is null or closed.");
+                logger.warn("DynamicSelect.preparedStatement. Worker " + Thread.currentThread().getName() + ". Connection is null or closed.");
         	}
 		} catch (SQLException e) {
-            L4j.getL4j().error("DynamicSelect.preparedStatement. Worker " + Thread.currentThread().getName() + ". Error preparing query. Exception message: " + e.getMessage());
+            logger.error("DynamicSelect.preparedStatement. Worker " + Thread.currentThread().getName() + ". Error preparing query. Exception message: " + e.getMessage());
 		}
     }
 
@@ -73,9 +76,9 @@ public class DynamicSelect {
             	if (this.preparedStatement != null && !this.preparedStatement.isClosed())
             		rs = this.preparedStatement.executeQuery();
                 long serverIn = (System.currentTimeMillis() - start_time);
-                L4j.getL4j().debug("DynamicSelect.executeQuery. Worker " + Thread.currentThread().getName() + ". Spent time executing query (ms): " + serverIn);
+                logger.debug("DynamicSelect.executeQuery. Worker " + Thread.currentThread().getName() + ". Spent time executing query (ms): " + serverIn);
             } catch (SQLException e) {
-                L4j.getL4j().error("DynamicSelect.executeQuery. Worker " + Thread.currentThread().getName() + ". Error executing query: " + this.selecteInfo + ". Exception message: " + e.getMessage());
+                logger.error("DynamicSelect.executeQuery. Worker " + Thread.currentThread().getName() + ". Error executing query: " + this.selecteInfo + ". Exception message: " + e.getMessage());
             }
         }
         return rs;
@@ -86,7 +89,7 @@ public class DynamicSelect {
         	if (this.preparedStatement != null && !this.preparedStatement.isClosed())
         		this.preparedStatement.close();
         } catch (SQLException e) {
-        	L4j.getL4j().error("DynamicSelect.close. Error closing preparedStatement: " + e.getMessage());
+        	logger.error("DynamicSelect.close. Error closing preparedStatement: " + e.getMessage());
         }
     }
 
