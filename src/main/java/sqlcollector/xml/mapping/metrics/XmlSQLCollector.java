@@ -16,6 +16,7 @@ public class XmlSQLCollector {
     private XmlMeasurementGroups xmlMeasurementGroups;
     private XmlIterateGroups xmlIterateGroups;
     private XmlSelfMon xmlSelfMon;
+    private XmlLoggingConf xmlLoggingConf;
 
     public XmlSourceDatabases getXmlSourceDatabases() {
         return xmlSourceDatabases;
@@ -78,6 +79,15 @@ public class XmlSQLCollector {
     @XmlElement(name="SelfMon")
     public void setXmlSelfMon(XmlSelfMon xmlSelfMon) {
         this.xmlSelfMon = xmlSelfMon;
+    }
+
+    public XmlLoggingConf getXmlLoggingConf() {
+        return xmlLoggingConf;
+    }
+
+    @XmlElement(name="LoggingConf")
+    public void setXmlLoggingConf(XmlLoggingConf xmlLoggingConf) {
+        this.xmlLoggingConf = xmlLoggingConf;
     }
 
 }

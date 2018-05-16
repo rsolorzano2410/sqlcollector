@@ -13,6 +13,8 @@ public class XmlSelfMon {
     private int freq;
     private String sDestDatabaseId;
     private String sExtraTags;
+	private String sLogFileName;
+	private String sLogLevel;
 
     public boolean getEnabled() {
         return enabled;
@@ -48,6 +50,24 @@ public class XmlSelfMon {
     @XmlElement(name="ExtraTags")
     public void setExtraTags(String sExtraTags) {
         this.sExtraTags = sExtraTags;
+    }
+
+    public String getLogFileName() {
+        return sLogFileName;
+    }
+
+    @XmlElement(name="LogFileName")
+    public void setLogFileName(String sLogFileName) {
+        this.sLogFileName = sLogFileName;
+    }
+
+    public String getLogLevel() {
+        return sLogLevel;
+    }
+
+    @XmlElement(name="LogLevel")
+    public void setLogLevel(String sLogLevel) {
+        this.sLogLevel = sLogLevel;
     }
 
 }

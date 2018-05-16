@@ -7,6 +7,7 @@ import sqlcollector.xml.mapping.metrics.XmlDestDatabase;
 import sqlcollector.xml.mapping.metrics.XmlDestDatabases;
 import sqlcollector.xml.mapping.metrics.XmlIterateGroup;
 import sqlcollector.xml.mapping.metrics.XmlIterateGroups;
+import sqlcollector.xml.mapping.metrics.XmlLoggingConf;
 import sqlcollector.xml.mapping.metrics.XmlMeasurement;
 import sqlcollector.xml.mapping.metrics.XmlMeasurementGroup;
 import sqlcollector.xml.mapping.metrics.XmlMeasurementGroups;
@@ -103,6 +104,14 @@ public class ReadConfXml {
     	return xmlSelfMon;
     }
     
+    public static XmlLoggingConf getLoggingConf(XmlSQLCollector xmlSQLCollector) throws SQLCollectorException {
+    	XmlLoggingConf xmlLoggingConf = null;
+    	if (xmlSQLCollector != null) {
+    		xmlLoggingConf = xmlSQLCollector.getXmlLoggingConf();
+    	}
+    	return xmlLoggingConf;
+    }
+    
     public static XmlQuery findXmlQueryById(String id, List<XmlQuery> lsXmlQueriesDef) {
     	XmlQuery xmlQueryFound = null;
         for(XmlQuery xmlQuery: lsXmlQueriesDef){
@@ -195,8 +204,8 @@ public class ReadConfXml {
     	return lsXmlQueriesRet;
     }
     
-    public static XmlSQLCollector getXmlSQLCollector() throws SQLCollectorException {
-        return unmarshal(new File(Constants.SQLCOLLECTOR_XML), XmlSQLCollector.class);
+    public static XmlSQLCollector getXmlSQLCollector(String sConfigFilePath) throws SQLCollectorException {
+        return unmarshal(new File(sConfigFilePath), XmlSQLCollector.class);
     }
 
     private static<E> E  unmarshal(File file, Class<E> type) throws SQLCollectorException {

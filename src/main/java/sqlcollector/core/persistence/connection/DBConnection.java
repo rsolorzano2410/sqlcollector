@@ -9,6 +9,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.sql.Connection;
 
+import org.apache.logging.log4j.Logger;
 import org.influxdb.InfluxDB;
 import org.influxdb.InfluxDBFactory;
 import org.influxdb.dto.Pong;
@@ -18,7 +19,9 @@ import sqlcollector.core.logs.L4j;
 
 public class DBConnection {
 
-    public static Connection getPgConnection(String sHost, long lPort, String sDbName, String sUsername, String sPassword) 
+	private static Logger logger = L4j.getL4j();
+	
+	public static Connection getPgConnection(String sHost, long lPort, String sDbName, String sUsername, String sPassword) 
     		throws SQLException {
         String sJdbcDriver = "org.postgresql.Driver";
         String sConnectionString = "jdbc:postgresql://" + sHost + ":" + lPort + "/" + sDbName;
@@ -41,7 +44,7 @@ public class DBConnection {
             Class.forName(sJdbcDriver);
         	connection = DriverManager.getConnection(sConnectionString, sUsername, sPassword);
         } catch (ClassNotFoundException e) {
-            L4j.getL4j().error("DBConnection.getJdbcConnection. Error getting JDBC Driver: " + sJdbcDriver);
+            logger.error("DBConnection.getJdbcConnection. Error getting JDBC Driver: " + sJdbcDriver);
         }
         return connection;
     }
@@ -57,7 +60,7 @@ public class DBConnection {
         	clientBuilder = SslManager.getSSLClientBuilder(sSslCertFilePath);
         }
         String sConnectionString = sProtocol + "://" + sDbHost + ":" + lDbPort;
-        L4j.getL4j().debug("getInfluxDBConnection. Connecting to: " + sConnectionString);
+        logger.debug("getInfluxDBConnection. Connecting to: " + sConnectionString);
     	InfluxDB influxDB = InfluxDBFactory.connect(sConnectionString, sDbUser, sDbPassword, clientBuilder);
     	return influxDB;
     }
@@ -73,21 +76,21 @@ public class DBConnection {
         while (!bIsConnected) {
         	try {
             	influxDB = getInfluxDBConnection(sDbHost, lDbPort, sDbDatabase, sDbUser, sDbPassword, bSsl, sSslCertFilePath);
-        		L4j.getL4j().debug("getInfluxDBConnection. Calling ping");
+        		logger.debug("getInfluxDBConnection. Calling ping");
 		    	Pong pong = influxDB.ping();
-		    	L4j.getL4j().debug("getInfluxDBConnection. " + pong.toString());
+		    	logger.debug("getInfluxDBConnection. " + pong.toString());
             	bIsConnected = (pong != null && pong.isGood());
-                L4j.getL4j().info("getInfluxDBConnection. Connected to DB (Host: " + sDbHost + " Port: " + lDbPort + " DataBase: " + sDbDatabase + ")");
+                logger.info("getInfluxDBConnection. Connected to DB (Host: " + sDbHost + " Port: " + lDbPort + " DataBase: " + sDbDatabase + ")");
         	} catch (Exception e) {
-        		L4j.getL4j().warn("getInfluxDBConnection. Exception: " + e.getMessage());
+        		logger.warn("getInfluxDBConnection. Exception: " + e.getMessage());
 				lSpentTime = System.currentTimeMillis() - lInitTime;
 	            if (!bIsConnected) {
 		            if ((lTimeToConnect == null) || (lSpentTime + lReconnectTimeoutMs) < lTimeToConnect.longValue()) {
-		            	L4j.getL4j().warn("getInfluxDBConnection. Error pinging to host:port:DB: " + sDbHost + ":" + lDbPort + ":" + sDbDatabase  
+		            	logger.warn("getInfluxDBConnection. Error pinging to host:port:DB: " + sDbHost + ":" + lDbPort + ":" + sDbDatabase  
 	                			+ ". Trying again after " + lReconnectTimeout + " seconds.");
 						Thread.sleep(lReconnectTimeoutMs);
 		            } else {
-		            	L4j.getL4j().warn("getInfluxDBConnection. The process spent " + lSpentTime + " ms trying connection to host:port:DB: " + sDbHost + ":" + lDbPort + ":" + sDbDatabase);
+		            	logger.warn("getInfluxDBConnection. The process spent " + lSpentTime + " ms trying connection to host:port:DB: " + sDbHost + ":" + lDbPort + ":" + sDbDatabase);
 		            	break;
 		            }
 	            }

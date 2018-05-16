@@ -5,33 +5,35 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import sqlcollector.core.logs.L4j;
+import org.apache.logging.log4j.Logger;
 
 public class StaticSelect {
 
+	private Logger logger;
     private Connection connection;
     private PreparedStatement preparedStatement;
     private Boolean firstIteration;
 
-    public StaticSelect(Connection connection, Boolean firstIteration) {
+    public StaticSelect(Logger logger, Connection connection, Boolean firstIteration) {
+        this.logger = logger;
         this.connection = connection;
         this.firstIteration = firstIteration;
     }
 
     public ResultSet executeQuery(String select) {
         if(this.firstIteration) {
-            L4j.getL4j().debug("Cache: " + Thread.currentThread().getName() + " QUERY: " + select);
+            logger.debug("Cache: " + Thread.currentThread().getName() + " QUERY: " + select);
         }
-        L4j.getL4j().debug("executeQuery. select: " + select);
+        logger.debug("executeQuery. select: " + select);
         ResultSet resultSet = null;
         try {
             long start_time=System.currentTimeMillis();
             this.preparedStatement = this.connection.prepareStatement(select);
             resultSet = this.preparedStatement.executeQuery();
             long serverIn = (System.currentTimeMillis() - start_time);
-            L4j.getL4j().debug("StaticSelect.executeQuery. Worker " + Thread.currentThread().getName() + ". Spent time executing query (ms): " + serverIn);
+            logger.debug("StaticSelect.executeQuery. Worker " + Thread.currentThread().getName() + ". Spent time executing query (ms): " + serverIn);
         } catch (SQLException e) {
-            L4j.getL4j().error("StaticSelect.executeQuery. Worker " + Thread.currentThread().getName() + ". Error executing query: " + select + ". Exception message: " + e.getMessage());
+            logger.error("StaticSelect.executeQuery. Worker " + Thread.currentThread().getName() + ". Error executing query: " + select + ". Exception message: " + e.getMessage());
         }
         return resultSet;
     }
@@ -41,7 +43,7 @@ public class StaticSelect {
         	if (this.preparedStatement != null && !this.preparedStatement.isClosed())
         		this.preparedStatement.close();
         } catch (SQLException e) {
-        	L4j.getL4j().error("StaticSelect.close. Error closing preparedStatement: " + e.getMessage());
+        	logger.error("StaticSelect.close. Error closing preparedStatement: " + e.getMessage());
         }
     }
 }

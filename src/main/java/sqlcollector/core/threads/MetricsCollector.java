@@ -1,6 +1,5 @@
 package sqlcollector.core.threads;
 
-import sqlcollector.core.logs.L4j;
 import sqlcollector.core.statistics.Capturer;
 import sqlcollector.utils.Utils;
 import sqlcollector.writer.influx.InfluxWriter;
@@ -10,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.logging.log4j.Logger;
 import org.influxdb.dto.BatchPoints;
 
 /*
@@ -18,6 +18,7 @@ import org.influxdb.dto.BatchPoints;
 
 public class MetricsCollector extends Thread implements Runnable {
 
+	private Logger logger;
     private String sThreadId;
     private final Capturer capturer;
     private final InfluxWriter influxWriter;
@@ -32,24 +33,25 @@ public class MetricsCollector extends Thread implements Runnable {
      *  - long lTimeToRW: maximum number of milliseconds to do the read and write operations,
      *  					(polling frequency - time spent getting connection to databases)
      */
-    public MetricsCollector(String sThreadId, Capturer capturer, InfluxWriter influxWriter, long lTimeToRW) {
-        L4j.getL4j().info("################################################################");
-    	L4j.getL4j().info("# MetricsCollector. Creating thread for " + sThreadId);
-        L4j.getL4j().info("################################################################");
+    public MetricsCollector(Logger logger, String sThreadId, Capturer capturer, InfluxWriter influxWriter, long lTimeToRW) {
+    	this.logger = logger;
         this.sThreadId = sThreadId;
         this.capturer = capturer;
         this.influxWriter = influxWriter;
         this.lTimeToRW = lTimeToRW;
+        logger.info("################################################################");
+    	logger.info("# MetricsCollector. Creating thread for " + sThreadId);
+        logger.info("################################################################");
     }
 
     public void run(){
-    	L4j.getL4j().debug(sThreadId + ". MetricsCollector. Init run.");
+    	logger.debug(sThreadId + ". MetricsCollector. Init run.");
         Thread.currentThread().setName(sThreadId);
 		long lInitTime = System.currentTimeMillis();
         try {
 			List<BatchPoints> lsBatchPoints = this.capturer.getBatchPointsList();
 	        long lReadTime = System.currentTimeMillis() - lInitTime;
-	    	L4j.getL4j().info(sThreadId + ". MetricsCollector. lReadTime: " + lReadTime);
+	    	logger.info(sThreadId + ". MetricsCollector. lReadTime: " + lReadTime);
 	    	if (lsBatchPoints != null && lsBatchPoints.size() > 0) {
 	    		
 	    		// Add read time and number of metrics to metrics
@@ -66,15 +68,15 @@ public class MetricsCollector extends Thread implements Runnable {
 		    	if (lTimeToWrite > 0) {
 			        this.influxWriter.writeToInflux(lsBatchPoints, lTimeToWrite, this.capturer.getSourceDatabaseId());
 			        long lWriteTime = System.currentTimeMillis() - lInitTime - lReadTime;
-			    	L4j.getL4j().info(sThreadId + ". MetricsCollector. lWriteTime: " + lWriteTime);
+			    	logger.info(sThreadId + ". MetricsCollector. lWriteTime: " + lWriteTime);
 		    	}
 	    	}
 		} catch (SQLException e) {
-			L4j.getL4j().error(sThreadId + ". MetricsCollector. Error getting metrics: " + e.getMessage());
+			logger.error(sThreadId + ". MetricsCollector. Error getting metrics: " + e.getMessage());
 		} catch (InterruptedException e) {
-			L4j.getL4j().error(sThreadId + ". MetricsCollector. run. Interrupted while sleeping. Exception: " + e.getMessage());
+			logger.error(sThreadId + ". MetricsCollector. run. Interrupted while sleeping. Exception: " + e.getMessage());
 		}
-    	L4j.getL4j().debug(sThreadId + ". MetricsCollector. End run.");
+    	logger.debug(sThreadId + ". MetricsCollector. End run.");
     }
     
 }
