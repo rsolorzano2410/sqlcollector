@@ -1,3 +1,11 @@
+# v 0.5 (2018-06-01)
+### New Features
+* SQLCollector.xml has been modified to obtain significant metrics from v$sysmetric.
+
+### fixes
+
+### breaking changes
+
 # v 0.4 (2018-05-16)
 ### New Features
 * Different logFiles and logLevels can be specified for each source database and also for self monitoring.
