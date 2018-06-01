@@ -35,8 +35,8 @@ public class SQLCollector {
 			logger.info("############################");
 	    	logger.info("# Oracle metrics collector #");
 	        logger.info("#       SQLCollector       #");
-	        logger.info("#          v.0.4           #");
-	        logger.info("#         15-05-18         #");
+	        logger.info("#          v.0.5           #");
+	        logger.info("#         01-06-18         #");
 	        logger.info("############################");
 
 	        ThreadManager threadManager = new ThreadManager(logger, xmlSQLCollector);
