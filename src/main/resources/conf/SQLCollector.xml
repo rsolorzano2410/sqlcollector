@@ -13,17 +13,14 @@
 			<IntervalSecs>60</IntervalSecs>
 			<DestDatabaseId>influxdb1</DestDatabaseId>
 			<Measurements>
-				<Measurement id="msmt11"/>
-				<Measurement id="msmt12"/>
-				<Measurement id="msmt21"/>
-				<Measurement id="msmt22"/>
-<!-- 
-				<Measurement id="msgr111"/>
-				<Measurement id="msit1111"/>
--->
+				<Measurement id="Activity"/>
+				<Measurement id="Cache"/>
+				<Measurement id="Efficiency"/>
+				<Measurement id="Queueing"/>
+				<Measurement id="Redos"/>
 			</Measurements>
 			<LogFileName>oracledb1</LogFileName>
-			<LogLevel>info</LogLevel>
+			<LogLevel>debug</LogLevel>
 		</SourceDatabase>
 <!-- 
 		<SourceDatabase id="oracledb1">
@@ -103,295 +100,278 @@
 -->
 	</DestDatabases>
 	<Queries>
-		<Query id="q_db_io">
-			<Statement>
-				SELECT sum(vf.PHYBLKRD)*8192 AS PHY_BLK_R, sum(vf.PHYBLKWRT)*8192 AS PHY_BLK_W, 'tablespace' AS i_prefix, dt.tablespace_name
-					FROM ((dba_data_files dd JOIN v$filestat vf ON dd.file_id = vf.file#)
-						JOIN dba_tablespaces dt ON dd.tablespace_name = dt.tablespace_name)
-				GROUP BY dt.tablespace_name
-			</Statement>
+		<Query id="Average_Active_Sessions">
+			<Statement>SELECT value FROM v$sysmetric WHERE group_id = 2 AND metric_name = 'Average Active Sessions'</Statement>
 			<Columns>
-<!--
-				<Column>
-					<Name>name of the column in statement</Name>
-					<DestName>name to use in destination database</DestName>
-					<Type>tag: the value is written as a tag in destination database, 
-						field: the value is written as a field in destination database, 
-						metricName: the value is written as a metricName in destination database (used in iterategroups), 
-						metricValue: the value is written as a metricValue in destination database (used in iterategroups)
-					</Type>
-					<DataType>
-						data type of the value in destination database. 
-						Possible values: string for strings, 
-										integer for integer numbers, 
-										float for decimal numbers, 
-										boolean for booleans
-					</DataType>
-				</Column>
--->
-				<Column>
-					<Name>i_prefix</Name>
-					<DestName>i_prefix</DestName>
-					<Type>tag</Type>
-					<DataType>string</DataType>
-				</Column>
-				<Column>
-					<Name>TABLESPACE_NAME</Name>
-					<DestName>TABLESPACE_NAME</DestName>
-					<Type>tag</Type>
-					<DataType>string</DataType>
-				</Column>
-				<Column>
-					<Name>PHY_BLK_R</Name>
-					<DestName>PHY_BLK_R</DestName>
-					<Type>field</Type>
-					<DataType>integer</DataType>
-				</Column>
-				<Column>
-					<Name>PHY_BLK_W</Name>
-					<DestName>PHY_BLK_W</DestName>
-					<Type>field</Type>
-					<DataType>integer</DataType>
-				</Column>
-			</Columns>
-		</Query>
-		<Query id="q_db_wait">
-			<Statement>
-				SELECT event, time_waited from v$system_event
-					WHERE event = ? 
-					OR event = ? 
-					OR event IN 
-					<!-- IN condition will be constructed with the parameters having the attribute argument="IN" -->
-					<!-- 'buffer busy waits','db file sequential read','log file switch completion','latch free' -->
-			</Statement>
-			<Columns>
-				<Column>
-					<Name>event</Name>
-					<DestName>event</DestName>
-					<Type>tag</Type>
-					<DataType>string</DataType>
-				</Column>
-				<Column>
-					<Name>TIME_WAITED</Name>
-					<DestName>TIME_WAITED</DestName>
-					<Type>field</Type>
-					<DataType>integer</DataType>
-				</Column>
-			</Columns>
-		</Query>
-		<Query id="q_db_time">
-			<Statement>
-				SELECT stat_name, Round(value/1000000) time
-					FROM v$sys_time_model where stat_name IN 
-					<!-- 'DB time', 'DB CPU' -->
-			</Statement>
-			<Columns>
-				<Column>
-					<Name>STAT_NAME</Name>
-					<DestName>STAT_NAME</DestName>
-					<Type>tag</Type>
-					<DataType>string</DataType>
-				</Column>
-				<Column>
-					<Name>time</Name>
-					<DestName>stat_time</DestName>
-					<Type>field</Type>
-					<DataType>integer</DataType>
-				</Column>
-			</Columns>
-		</Query>
-		<Query id="q_db_redo">
-			<Statement>
-				SELECT name ,value
-					FROM v$sysstat
-						WHERE name = ?
-						<!-- 'redo entries' -->
-			</Statement>
-			<Columns>
-				<Column>
-					<Name>name</Name>
-					<DestName>name</DestName>
-					<Type>tag</Type>
-					<DataType>string</DataType>
-				</Column>
 				<Column>
 					<Name>value</Name>
-					<DestName>value</DestName>
+					<DestName>Average_Active_Sessions</DestName>
 					<Type>field</Type>
-					<DataType>integer</DataType>
+					<DataType>float</DataType>
 				</Column>
 			</Columns>
 		</Query>
-		<Query id="q_db_size">
-			<Statement>
-				SELECT a.tablespace_name,SUM(a.bytes)/1024/1024 ActualMb,(SUM(a.bytes)/1024/1024 - round(c.Free/1024/1024)) TotalUsado
-					FROM dba_data_files a, sys.filext$ b, (SELECT c.tablespace_name , sum(c.bytes) Free
-					FROM DBA_FREE_SPACE c GROUP BY TABLESPACE_NAME) c
-						WHERE a.file_id = b.file#(+)
-							AND a.tablespace_name = c.tablespace_name
-				GROUP by a.tablespace_name, c.Free/1024/1024
-			</Statement>
+		<Query id="Current_Logons_Count">
+			<Statement>SELECT value FROM v$sysmetric WHERE group_id = 2 AND metric_name = 'Current Logons Count'</Statement>
 			<Columns>
-				<Column>
-					<Name>TABLESPACE_NAME</Name>
-					<DestName>TABLESPACE_NAME</DestName>
-					<Type>tag</Type>
-					<DataType>string</DataType>
-				</Column>
-				<Column>
-					<Name>ActualMb</Name>
-					<DestName>ActualMb</DestName>
-					<Type>field</Type>
-					<DataType>integer</DataType>
-				</Column>
-				<Column>
-					<Name>TotalUsado</Name>
-					<DestName>TotalUsado</DestName>
-					<Type>field</Type>
-					<DataType>integer</DataType>
-				</Column>
-			</Columns>
-		</Query>
-		<Query id="q_db_session">
-			<Statement>
-				SELECT 'BACKGROUND' as TIPO, count(1) as total
-					FROM v$session
-						WHERE type ='BACKGROUND'
-				GROUP BY type
-				UNION ALL
-					SELECT STATUS as TIPO, count(1) as total
-						FROM v$session
-				GROUP BY STATUS
-			</Statement>
-			<Columns>
-				<Column>
-					<Name>TIPO</Name>
-					<DestName>TIPO</DestName>
-					<Type>tag</Type>
-					<DataType>string</DataType>
-				</Column>
-				<Column>
-					<Name>total</Name>
-					<DestName>total</DestName>
-					<Type>field</Type>
-					<DataType>integer</DataType>
-				</Column>
-			</Columns>
-		</Query>
-		<Query id="q_db_control_grid">
-			<Statement>
-				select target_name, metric_column, value
-					from mgmt$metric_current
-					where target_name = ?
-					<!-- A parameter with the attribute type="column" must exist with value=target_name -->
-						and collection_timestamp > sysdate-1/24
-						and metric_column IN
-						<!-- A list of parameters with the attribute argument="IN" must exist -->
-			</Statement>
-			<Columns>
-<!--
-				<Column>
-					<Name>name of the column in statement</Name>
-					<DestName>name to use in destination database</DestName>
-					<Type>tag: the value is written as a tag in destination database, 
-						field: the value is written as a field in destination database, 
-						metricName: the value is written as a metricName in destination database (used in iterategroups), 
-						metricValue: the value is written as a metricValue in destination database (used in iterategroups)
-					</Type>
-					<DataType>data type of the value in destination database. Possible values: string, long, double, boolean</DataType>
-				</Column>
--->
-				<Column>
-					<Name>target_name</Name>
-					<DestName>target_name</DestName>
-					<Type>tag</Type>
-					<DataType>string</DataType>
-				</Column>
-				<Column>
-					<Name>metric_column</Name>
-					<Type>metricName</Type>
-					<DataType>string</DataType>
-				</Column>
 				<Column>
 					<Name>value</Name>
-					<Type>metricValue</Type>
-					<DataType>string</DataType>
+					<DestName>Current_Logons_Count</DestName>
+					<Type>field</Type>
+					<DataType>integer</DataType>
+				</Column>
+			</Columns>
+		</Query>
+		<Query id="Database_CPU_Time_Ratio">
+			<Statement>SELECT value FROM v$sysmetric WHERE group_id = 2 AND metric_name = 'Database CPU Time Ratio'</Statement>
+			<Columns>
+				<Column>
+					<Name>value</Name>
+					<DestName>Database_CPU_Time_Ratio</DestName>
+					<Type>field</Type>
+					<DataType>float</DataType>
+				</Column>
+			</Columns>
+		</Query>
+		<Query id="Database_Time_Per_Sec">
+			<Statement>SELECT value FROM v$sysmetric WHERE group_id = 2 AND metric_name = 'Database Time Per Sec'</Statement>
+			<Columns>
+				<Column>
+					<Name>value</Name>
+					<DestName>Database_Time_Per_Sec</DestName>
+					<Type>field</Type>
+					<DataType>float</DataType>
+				</Column>
+			</Columns>
+		</Query>
+		<Query id="Database_Wait_Time_Ratio">
+			<Statement>SELECT value FROM v$sysmetric WHERE group_id = 2 AND metric_name = 'Database Wait Time Ratio'</Statement>
+			<Columns>
+				<Column>
+					<Name>value</Name>
+					<DestName>Database_Wait_Time_Ratio</DestName>
+					<Type>field</Type>
+					<DataType>float</DataType>
+				</Column>
+			</Columns>
+		</Query>
+		<Query id="Enqueue_Requests_Per_Sec">
+			<Statement>SELECT value FROM v$sysmetric WHERE group_id = 2 AND metric_name = 'Enqueue Requests Per Sec'</Statement>
+			<Columns>
+				<Column>
+					<Name>value</Name>
+					<DestName>Enqueue_Requests_Per_Sec</DestName>
+					<Type>field</Type>
+					<DataType>float</DataType>
+				</Column>
+			</Columns>
+		</Query>
+		<Query id="Enqueue_Timeouts_Per_Sec">
+			<Statement>SELECT value FROM v$sysmetric WHERE group_id = 2 AND metric_name = 'Enqueue Timeouts Per Sec'</Statement>
+			<Columns>
+				<Column>
+					<Name>value</Name>
+					<DestName>Enqueue_Timeouts_Per_Sec</DestName>
+					<Type>field</Type>
+					<DataType>float</DataType>
+				</Column>
+			</Columns>
+		</Query>
+		<Query id="Enqueue_Waits_Per_Sec">
+			<Statement>SELECT value FROM v$sysmetric WHERE group_id = 2 AND metric_name = 'Enqueue Waits Per Sec'</Statement>
+			<Columns>
+				<Column>
+					<Name>value</Name>
+					<DestName>Enqueue_Waits_Per_Sec</DestName>
+					<Type>field</Type>
+					<DataType>float</DataType>
+				</Column>
+			</Columns>
+		</Query>
+		<Query id="Execute_Without_Parse_Ratio">
+			<Statement>SELECT value FROM v$sysmetric WHERE group_id = 2 AND metric_name = 'Execute Without Parse Ratio'</Statement>
+			<Columns>
+				<Column>
+					<Name>value</Name>
+					<DestName>Execute_Without_Parse_Ratio</DestName>
+					<Type>field</Type>
+					<DataType>float</DataType>
+				</Column>
+			</Columns>
+		</Query>
+		<Query id="Executions_Per_Sec">
+			<Statement>SELECT value FROM v$sysmetric WHERE group_id = 2 AND metric_name = 'Executions Per Sec'</Statement>
+			<Columns>
+				<Column>
+					<Name>value</Name>
+					<DestName>Executions_Per_Sec</DestName>
+					<Type>field</Type>
+					<DataType>float</DataType>
+				</Column>
+			</Columns>
+		</Query>
+		<Query id="Global_Cache_Average_CR_Get_Time">
+			<Statement>SELECT value FROM v$sysmetric WHERE group_id = 2 AND metric_name = 'Global Cache Average CR Get Time'</Statement>
+			<Columns>
+				<Column>
+					<Name>value</Name>
+					<DestName>Global_Cache_Average_CR_Get_Time</DestName>
+					<Type>field</Type>
+					<DataType>float</DataType>
+				</Column>
+			</Columns>
+		</Query>
+		<Query id="Global_Cache_Average_Current_Get_Time">
+			<Statement>SELECT value FROM v$sysmetric WHERE group_id = 2 AND metric_name = 'Global Cache Average Current Get Time'</Statement>
+			<Columns>
+				<Column>
+					<Name>value</Name>
+					<DestName>Global_Cache_Average_Current_Get_Time</DestName>
+					<Type>field</Type>
+					<DataType>float</DataType>
+				</Column>
+			</Columns>
+		</Query>
+		<Query id="Global_Cache_Blocks_Corrupted">
+			<Statement>SELECT value FROM v$sysmetric WHERE group_id = 2 AND metric_name = 'Global Cache Blocks Corrupted'</Statement>
+			<Columns>
+				<Column>
+					<Name>value</Name>
+					<DestName>Global_Cache_Blocks_Corrupted</DestName>
+					<Type>field</Type>
+					<DataType>float</DataType>
+				</Column>
+			</Columns>
+		</Query>
+		<Query id="Global_Cache_Blocks_Lost">
+			<Statement>SELECT value FROM v$sysmetric WHERE group_id = 2 AND metric_name = 'Global Cache Blocks Lost'</Statement>
+			<Columns>
+				<Column>
+					<Name>value</Name>
+					<DestName>Global_Cache_Blocks_Lost</DestName>
+					<Type>field</Type>
+					<DataType>float</DataType>
+				</Column>
+			</Columns>
+		</Query>
+		<Query id="IO_Megabytes_per_Second">
+			<Statement>SELECT value FROM v$sysmetric WHERE group_id = 2 AND metric_name = 'I/O Megabytes per Second'</Statement>
+			<Columns>
+				<Column>
+					<Name>value</Name>
+					<DestName>IO_Megabytes_per_Second</DestName>
+					<Type>field</Type>
+					<DataType>float</DataType>
+				</Column>
+			</Columns>
+		</Query>
+		<Query id="IO_Requests_per_Second">
+			<Statement>SELECT value FROM v$sysmetric WHERE group_id = 2 AND metric_name = 'I/O Requests per Second'</Statement>
+			<Columns>
+				<Column>
+					<Name>value</Name>
+					<DestName>IO_Requests_per_Second</DestName>
+					<Type>field</Type>
+					<DataType>float</DataType>
+				</Column>
+			</Columns>
+		</Query>
+		<Query id="Physical_Reads_Per_Sec">
+			<Statement>SELECT value FROM v$sysmetric WHERE group_id = 2 AND metric_name = 'Physical Reads Per Sec'</Statement>
+			<Columns>
+				<Column>
+					<Name>value</Name>
+					<DestName>Physical_Reads_Per_Sec</DestName>
+					<Type>field</Type>
+					<DataType>float</DataType>
+				</Column>
+			</Columns>
+		</Query>
+		<Query id="Redo_Allocation_Hit_Ratio">
+			<Statement>SELECT value FROM v$sysmetric WHERE group_id = 2 AND metric_name = 'Redo Allocation Hit Ratio'</Statement>
+			<Columns>
+				<Column>
+					<Name>value</Name>
+					<DestName>Redo_Allocation_Hit_Ratio</DestName>
+					<Type>field</Type>
+					<DataType>float</DataType>
+				</Column>
+			</Columns>
+		</Query>
+		<Query id="Redo_Generated_Per_Sec">
+			<Statement>SELECT value FROM v$sysmetric WHERE group_id = 2 AND metric_name = 'Redo Generated Per Sec'</Statement>
+			<Columns>
+				<Column>
+					<Name>value</Name>
+					<DestName>Redo_Generated_Per_Sec</DestName>
+					<Type>field</Type>
+					<DataType>float</DataType>
+				</Column>
+			</Columns>
+		</Query>
+		<Query id="Response_Time_Per_Txn">
+			<Statement>SELECT value FROM v$sysmetric WHERE group_id = 2 AND metric_name = 'Response Time Per Txn'</Statement>
+			<Columns>
+				<Column>
+					<Name>value</Name>
+					<DestName>Response_Time_Per_Txn</DestName>
+					<Type>field</Type>
+					<DataType>float</DataType>
+				</Column>
+			</Columns>
+		</Query>
+		<Query id="Soft_Parse_Ratio">
+			<Statement>SELECT value FROM v$sysmetric WHERE group_id = 2 AND metric_name = 'Soft Parse Ratio'</Statement>
+			<Columns>
+				<Column>
+					<Name>value</Name>
+					<DestName>Soft_Parse_Ratio</DestName>
+					<Type>field</Type>
+					<DataType>float</DataType>
 				</Column>
 			</Columns>
 		</Query>
 	</Queries>
 	<Measurements>
-		<Measurement id="msmt11">
-			<ExtraTags>tag1=value1,tag2=value2</ExtraTags> 
+		<Measurement id="Activity">
 			<Queries>
-				<Query id="q_db_io"/>
-				<Query id="q_db_redo">
-					<!-- 'redo entries' -->
-					<Parameters>
-						<!--type: column or literal - default literal-->
-						<Parameter type="literal">redo entries</Parameter>
-					</Parameters>
-				</Query>
+				<Query id="Average_Active_Sessions"/>
+				<Query id="Current_Logons_Count"/>
+				<Query id="Database_Time_Per_Sec"/>
+				<Query id="Executions_Per_Sec"/>
+				<Query id="IO_Megabytes_per_Second"/>
+				<Query id="IO_Requests_per_Second"/>
+				<Query id="Physical_Reads_Per_Sec"/>
 			</Queries>
 		</Measurement>
-		<Measurement id="msmt12">
+		<Measurement id="Cache">
 			<Queries>
-				<Query id="q_db_wait">
-					<!-- 'buffer busy waits','db file sequential read','log file switch completion','latch free' -->
-					<Parameters>
-						<!--arguments for IN condition of query-->
-<!-- 
-						<Parameter argument="IN">buffer busy waits</Parameter>
-						<Parameter argument="IN">db file sequential read</Parameter>
- -->
-						<Parameter>buffer busy waits</Parameter>
-						<Parameter>db file sequential read</Parameter>
-						<Parameter argument="IN">log file switch completion</Parameter>
-						<Parameter argument="IN">latch free</Parameter>
-					</Parameters>
-				</Query>
-				<Query id="q_db_time">
-					<!-- 'DB time', 'DB CPU' -->
-					<Parameters>
-						<!--arguments for IN condition of query-->
-						<Parameter argument="IN">DB time</Parameter>
-						<Parameter argument="IN">DB CPU</Parameter>
-					</Parameters>
-				</Query>
+				<Query id="Global_Cache_Average_CR_Get_Time"/>
+				<Query id="Global_Cache_Average_Current_Get_Time"/>
+				<Query id="Global_Cache_Blocks_Corrupted"/>
+				<Query id="Global_Cache_Blocks_Lost"/>
 			</Queries>
 		</Measurement>
-		<Measurement id="msmt21">
+		<Measurement id="Efficiency">
 			<Queries>
-				<Query id="q_db_size"/>
-				<Query id="q_db_session"/>
+				<Query id="Database_CPU_Time_Ratio"/>
+				<Query id="Database_Wait_Time_Ratio"/>
+				<Query id="Execute_Without_Parse_Ratio"/>
+				<Query id="Response_Time_Per_Txn"/>
+				<Query id="Soft_Parse_Ratio"/>
 			</Queries>
 		</Measurement>
-		<Measurement id="msmt22">
+		<Measurement id="Queueing">
 			<Queries>
-				<Query id="q_db_wait">
-					<!-- 'buffer busy waits','db file sequential read','log file switch completion','latch free' -->
-					<Parameters>
-						<!--arguments for IN condition of query-->
-<!-- 
-						<Parameter argument="IN">buffer busy waits</Parameter>
-						<Parameter argument="IN">db file sequential read</Parameter>
- -->
-						<Parameter>buffer busy waits</Parameter>
-						<Parameter>db file sequential read</Parameter>
-						<Parameter argument="IN">log file switch completion</Parameter>
-						<Parameter argument="IN">latch free</Parameter>
-					</Parameters>
-				</Query>
-				<Query id="q_db_time">
-					<!-- 'DB time', 'DB CPU' -->
-					<Parameters>
-						<!--arguments for IN condition of query-->
-						<Parameter argument="IN">DB time</Parameter>
-						<Parameter argument="IN">DB CPU</Parameter>
-					</Parameters>
-				</Query>
-				<Query id="q_db_size"/>
-				<Query id="q_db_session"/>
+				<Query id="Enqueue_Requests_Per_Sec"/>
+				<Query id="Enqueue_Timeouts_Per_Sec"/>
+				<Query id="Enqueue_Waits_Per_Sec"/>
+			</Queries>
+		</Measurement>
+		<Measurement id="Redos">
+			<Queries>
+				<Query id="Redo_Allocation_Hit_Ratio"/>
+				<Query id="Redo_Generated_Per_Sec"/>
 			</Queries>
 		</Measurement>
 	</Measurements>
