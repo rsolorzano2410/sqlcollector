@@ -41,7 +41,6 @@ public class SelfMonThread implements Runnable {
         this.xmlDestDatabase = xmlDestDatabase;
 	}
 	
-    @Override
     public void run() {
         long lFreqMs = this.xmlSelfMon.getFreq() * 1000;
         long lSleepTimeMs = lFreqMs;
