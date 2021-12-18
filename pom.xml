@@ -14,7 +14,7 @@
         <assembly.version>3.1.0</assembly.version>
         <influxdbJava.version>2.9</influxdbJava.version>
         <jdk.version>1.8</jdk.version>
-        <log4jApi.version>2.13.2</log4jApi.version>
+        <log4jApi.version>2.17.0</log4jApi.version>
         <log4jCore.version>2.13.2</log4jCore.version>
         <oracle.version>12.1.0</oracle.version>
         <resources.version>3.0.2</resources.version>
